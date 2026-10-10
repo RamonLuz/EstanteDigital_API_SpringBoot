@@ -32,13 +32,7 @@ public class CustomerController {
 
     @GetMapping
     public ResponseEntity<List<Customer>> getAll() {
-        List<Customer> customers = customerService.listAll();
-
-        if (customers.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        return ResponseEntity.ok(customers);
+        return ResponseEntity.ok(customerService.listAll());
     }
 
     @GetMapping("/{id}")

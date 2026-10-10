@@ -14,13 +14,13 @@ import com.livrotech.entity.ApiException;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 	
-	@ExceptionHandler({MethodArgumentTypeMismatchException.class})
-	public ResponseEntity<ApiExceptionDTO> argumentException(
-	        Exception ex) {
+	@ExceptionHandler(MethodArgumentTypeMismatchException.class)
+	public ResponseEntity<ApiExceptionDTO> handleArgumentTypeMismatch(
+	        MethodArgumentTypeMismatchException ex) {
 
 	    ApiExceptionDTO response = new ApiExceptionDTO(
 	            400,
-	            "Id do cliente precisa ser do tipo Inteiro",
+	            "O ID deve ser numérico",
 	            "ID"
 	    );
 

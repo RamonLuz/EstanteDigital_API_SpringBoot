@@ -239,6 +239,30 @@ class ApiIntegrationTest {
                                 .andExpect(jsonPath("$.application").value("livrotech"));
     }
 
+    @Test
+    void emptyCustomerCollectionShouldReturnAnEmptyList() throws Exception {
+        mockMvc.perform(get("/customers"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    void endpointsShouldReturnClearErrorForNonNumericIds() throws Exception {
+        mockMvc.perform(get("/books/not-a-number"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("O ID deve ser numérico"))
+                .andExpect(jsonPath("$.field").value("ID"));
+        mockMvc.perform(get("/customers/not-a-number"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("O ID deve ser numérico"));
+        mockMvc.perform(get("/employees/not-a-number"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("O ID deve ser numérico"));
+        mockMvc.perform(get("/sales/not-a-number"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("O ID deve ser numérico"));
+    }
+
     private JsonNode createResource(String path, String body) throws Exception {
         MvcResult result = mockMvc.perform(post(path)
                         .contentType(MediaType.APPLICATION_JSON)
