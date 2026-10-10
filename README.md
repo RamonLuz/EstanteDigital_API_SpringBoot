@@ -1,4 +1,4 @@
-# EstanteDigital - Livrotech API
+# EstanteDigital API
 
 API REST desenvolvida em **Java + Spring Boot** para gerenciamento de livros, clientes, funcionários e vendas.
 
@@ -24,14 +24,14 @@ O projeto foi criado com o objetivo de praticar conceitos de desenvolvimento bac
 src
 └── main
     ├── java
-    │   └── com.livrotech
+    │   └── com.estantedigital
     │       ├── controller
     │       ├── dto
     │       ├── entity
     │       ├── exception
     │       ├── repository
     │       ├── service
-    │       └── LivrotechApplication
+    │       └── EstanteDigitalApplication
     └── resources
         └── application.yml
 ```
@@ -135,7 +135,7 @@ O projeto utiliza banco de dados em memória H2.
 ```yaml
 spring:
   datasource:
-    url: jdbc:h2:mem:livrotech
+    url: jdbc:h2:mem:estantedigital
     driver-class-name: org.h2.Driver
     username: sa
     password:
