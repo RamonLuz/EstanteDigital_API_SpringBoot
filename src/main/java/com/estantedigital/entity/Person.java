@@ -7,6 +7,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
+import jakarta.validation.constraints.NotBlank;
 
 @MappedSuperclass
 public abstract class Person {
@@ -15,9 +16,11 @@ public abstract class Person {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     protected Long id;
 
+    @NotBlank(message = "Name is required")
     @Column(nullable = false)
     protected String name;
 
+    @NotBlank(message = "CPF is required")
     @Column(nullable = false)
     protected String cpf;
 

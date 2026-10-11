@@ -9,67 +9,47 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import com.estantedigital.dto.ApiExceptionDTO;
-import com.estantedigital.entity.ApiException;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
-	
-	@ExceptionHandler(MethodArgumentTypeMismatchException.class)
-	public ResponseEntity<ApiExceptionDTO> handleArgumentTypeMismatch(
-	        MethodArgumentTypeMismatchException ex) {
 
-	    ApiExceptionDTO response = new ApiExceptionDTO(
-	            400,
-	            "O ID deve ser numérico",
-	            "ID"
-	    );
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiExceptionDTO> handleArgumentTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        ApiExceptionDTO response = new ApiExceptionDTO(
+                400,
+                "ID must be numeric",
+                "ID");
 
-	    return ResponseEntity
-	            .badRequest()
-	            .body(response);
-	}
-	
-	@ExceptionHandler({DataIntegrityViolationException.class, NullPointerException.class, MethodArgumentNotValidException.class})
-	public ResponseEntity<ApiExceptionDTO> handleDataIntegrity(
-	        Exception ex) {
+        return ResponseEntity.badRequest().body(response);
+    }
 
-	    ApiExceptionDTO response = new ApiExceptionDTO(
-	            400,
-	            "Campos obrigatórios não foram preenchidos",
-	            "BODY"
-	    );
+    @ExceptionHandler({ DataIntegrityViolationException.class, MethodArgumentNotValidException.class })
+    public ResponseEntity<ApiExceptionDTO> handleDataIntegrity(Exception ex) {
+        ApiExceptionDTO response = new ApiExceptionDTO(
+                400,
+                "Required fields were not provided",
+                "Body");
 
-	    return ResponseEntity
-	            .badRequest()
-	            .body(response);
-	}
+        return ResponseEntity.badRequest().body(response);
+    }
 
-	@ExceptionHandler(HttpMessageNotReadableException.class)
-	public ResponseEntity<ApiExceptionDTO> handleBodyMissing(
-	        HttpMessageNotReadableException ex) {
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiExceptionDTO> handleBodyMissing(HttpMessageNotReadableException ex) {
+        ApiExceptionDTO response = new ApiExceptionDTO(
+                400,
+                "Request body is required",
+                "Body");
 
-	    ApiExceptionDTO response = new ApiExceptionDTO(
-	            400,
-	            "Body da requisição é obrigatório",
-	            "BODY"
-	    );
+        return ResponseEntity.badRequest().body(response);
+    }
 
-	    return ResponseEntity
-	            .badRequest()
-	            .body(response);
-	}
-	
-	 @ExceptionHandler(ApiException.class)
-	    public ResponseEntity<?> handleApiException(ApiException ex) {
+    @ExceptionHandler(ApiException.class)
+    public ResponseEntity<ApiExceptionDTO> handleApiException(ApiException ex) {
+        ApiExceptionDTO response = new ApiExceptionDTO(
+                ex.getStatus(),
+                ex.getMessage(),
+                ex.getField());
 
-	        ApiExceptionDTO response = new ApiExceptionDTO(
-	                ex.getStatus(),
-	                ex.getMessage(),
-	                ex.getField()
-	        );
-
-	        return ResponseEntity
-	                .status(ex.getStatus())
-	                .body(response);
-	    }
+        return ResponseEntity.status(ex.getStatus()).body(response);
+    }
 }

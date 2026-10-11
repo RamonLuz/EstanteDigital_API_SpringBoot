@@ -5,11 +5,11 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
-import com.estantedigital.entity.ApiException;
 import com.estantedigital.entity.Book;
 import com.estantedigital.entity.Customer;
 import com.estantedigital.entity.Employee;
 import com.estantedigital.entity.Sale;
+import com.estantedigital.exception.ApiException;
 import com.estantedigital.repository.BookRepository;
 import com.estantedigital.repository.CustomerRepository;
 import com.estantedigital.repository.EmployeeRepository;
@@ -31,7 +31,7 @@ public class SaleService {
         this.customerRepository = customerRepository;
     }
 
-    public List<Sale> listAll() {
+    public List<Sale> findAll() {
         return saleRepository.findAll();
     }
 
@@ -40,17 +40,19 @@ public class SaleService {
     }
 
     public Sale save(Sale sale) {
+        if (sale == null || sale.getCustomer() == null || sale.getBook() == null || sale.getEmployee() == null) {
+            throw new ApiException(400, "Sale is invalid", "Body");
+        }
+
         Customer customer = customerRepository.findByCpf(sale.getCustomer().getCpf())
                 .orElseThrow(() -> new ApiException(400, "Customer does not exist", "Body"));
 
-        Book book = bookRepository.findAll().stream()
-                .filter(currentBook -> currentBook.equals(sale.getBook()))
+        Book book = bookRepository.findByTitleAndAuthor(sale.getBook().getTitle(), sale.getBook().getAuthor())
+                .stream()
                 .findFirst()
                 .orElseThrow(() -> new ApiException(400, "Book does not exist", "Body"));
 
-        Employee employee = employeeRepository.findAll().stream()
-                .filter(currentEmployee -> currentEmployee.equals(sale.getEmployee()))
-                .findFirst()
+        Employee employee = employeeRepository.findByRegistrationNumber(sale.getEmployee().getRegistrationNumber())
                 .orElseThrow(() -> new ApiException(400, "Employee does not exist", "Body"));
 
         sale.setCustomer(customer);
@@ -65,9 +67,12 @@ public class SaleService {
         Optional<Customer> existingCustomer = customerRepository.findByCpf(sale.getCustomer().getCpf());
 
         if (existingCustomer.isPresent()) {
-            List<Book> books = bookRepository.findByTitle(sale.getBook().getTitle());
-            if (!books.isEmpty()) {
-                Book book = books.get(0);
+            Book book = bookRepository.findByTitleAndAuthor(sale.getBook().getTitle(), sale.getBook().getAuthor())
+                    .stream()
+                    .findFirst()
+                    .orElse(null);
+
+            if (book != null) {
                 Customer customer = existingCustomer.get();
                 if (customer.getPurchases() != null) {
                     customer.getPurchases().add(book);

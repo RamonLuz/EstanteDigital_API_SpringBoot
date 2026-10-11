@@ -5,8 +5,8 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
-import com.estantedigital.entity.ApiException;
 import com.estantedigital.entity.Book;
+import com.estantedigital.exception.ApiException;
 import com.estantedigital.repository.BookRepository;
 
 @Service
@@ -18,7 +18,7 @@ public class BookService {
         this.bookRepository = bookRepository;
     }
 
-    public List<Book> listAll() {
+    public List<Book> findAll() {
         return bookRepository.findAll();
     }
 
@@ -44,7 +44,7 @@ public class BookService {
         return bookRepository.findById(id);
     }
 
-    public Optional<Book> update(Long id, Book updatedBook) {
+    public Optional<Book> updateById(Long id, Book updatedBook) {
         Optional<Book> existingBook = bookRepository.findById(id);
 
         if (existingBook.isPresent()) {
@@ -60,7 +60,7 @@ public class BookService {
         return Optional.empty();
     }
 
-    public boolean delete(Long id) {
+    public boolean deleteById(Long id) {
         if (bookRepository.existsById(id)) {
             bookRepository.deleteById(id);
             return true;

@@ -18,8 +18,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.estantedigital.entity.ApiException;
 import com.estantedigital.entity.Customer;
+import com.estantedigital.exception.ApiException;
 import com.estantedigital.repository.CustomerRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -84,11 +84,21 @@ class CustomerServiceTest {
     }
 
     @Test
+    void shouldRejectNullCustomer() {
+        ApiException exception = assertThrows(ApiException.class, () -> customerService.save(null));
+
+        assertEquals(400, exception.getStatus());
+        assertEquals("Customer is invalid", exception.getMessage());
+        assertEquals("Body", exception.getField());
+        verify(customerRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
     void shouldListCustomers() {
         Customer customer = newCustomer("Ana", CPF, "ACTIVE");
         when(customerRepository.findAll()).thenReturn(List.of(customer));
 
-        List<Customer> result = customerService.listAll();
+        List<Customer> result = customerService.findAll();
 
         assertEquals(1, result.size());
         assertSame(customer, result.get(0));

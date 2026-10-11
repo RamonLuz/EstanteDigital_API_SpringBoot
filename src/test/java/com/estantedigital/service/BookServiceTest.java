@@ -19,7 +19,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.estantedigital.entity.Book;
-import com.estantedigital.entity.ApiException;
+import com.estantedigital.exception.ApiException;
 import com.estantedigital.repository.BookRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -38,7 +38,7 @@ class BookServiceTest {
         when(bookRepository.findAll())
                 .thenReturn(List.of(book));
 
-        List<Book> result = bookService.listAll();
+        List<Book> result = bookService.findAll();
 
         assertEquals(1, result.size());
         assertEquals("Clean Code", result.get(0).getTitle());

@@ -5,8 +5,8 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
-import com.estantedigital.entity.ApiException;
 import com.estantedigital.entity.Customer;
+import com.estantedigital.exception.ApiException;
 import com.estantedigital.repository.CustomerRepository;
 
 @Service
@@ -19,6 +19,10 @@ public class CustomerService {
     }
 
     public Customer save(Customer customer) {
+        if (customer == null) {
+            throw new ApiException(400, "Customer is invalid", "Body");
+        }
+
         Optional<Customer> existingCustomer = customerRepository.findByCpf(customer.getCpf());
 
         if (existingCustomer.isPresent() && existingCustomer.get().equals(customer)) {
@@ -32,7 +36,7 @@ public class CustomerService {
         return customerRepository.save(customer);
     }
 
-    public List<Customer> listAll() {
+    public List<Customer> findAll() {
         return customerRepository.findAll();
     }
 
@@ -44,7 +48,7 @@ public class CustomerService {
         return customerRepository.findByCpf(cpf);
     }
 
-    public Optional<Customer> update(Long id, Customer updatedCustomer) {
+    public Optional<Customer> updateById(Long id, Customer updatedCustomer) {
         Optional<Customer> existingCustomer = customerRepository.findById(id);
 
         if (existingCustomer.isPresent()) {
@@ -57,7 +61,7 @@ public class CustomerService {
         return Optional.empty();
     }
 
-    public boolean delete(Long id) {
+    public boolean deleteById(Long id) {
         if (customerRepository.existsById(id)) {
             customerRepository.deleteById(id);
             return true;

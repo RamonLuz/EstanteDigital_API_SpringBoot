@@ -15,7 +15,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.estantedigital.dto.CustomerRequestDTO;
+import com.estantedigital.dto.CustomerResponseDTO;
 import com.estantedigital.entity.Customer;
+import com.estantedigital.mapper.CustomerMapper;
 import com.estantedigital.service.CustomerService;
 
 import jakarta.validation.Valid;
@@ -31,41 +33,39 @@ public class CustomerController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Customer>> getAll() {
-        return ResponseEntity.ok(customerService.listAll());
+    public ResponseEntity<List<CustomerResponseDTO>> getAll() {
+        return ResponseEntity.ok(customerService.findAll().stream()
+                .map(CustomerMapper::toResponse)
+                .toList());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Customer> getById(@PathVariable Long id) {
+    public ResponseEntity<CustomerResponseDTO> getById(@PathVariable Long id) {
         Optional<Customer> customer = customerService.findById(id);
 
         if (customer.isPresent()) {
-            return ResponseEntity.ok(customer.get());
+            return ResponseEntity.ok(CustomerMapper.toResponse(customer.get()));
         }
 
         return ResponseEntity.notFound().build();
     }
 
     @PostMapping
-    public ResponseEntity<Customer> create(@Valid @RequestBody CustomerRequestDTO dto) {
-        Customer customer = new Customer();
-        customer.setName(dto.getName());
-        customer.setCpf(dto.getCpf());
-        customer.setStatus(dto.getStatus());
+    public ResponseEntity<CustomerResponseDTO> create(@Valid @RequestBody CustomerRequestDTO dto) {
+        Customer customer = CustomerMapper.toEntity(dto);
 
         Customer savedCustomer = customerService.save(customer);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedCustomer);
+        return ResponseEntity.status(HttpStatus.CREATED).body(CustomerMapper.toResponse(savedCustomer));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Customer> update(@PathVariable Long id, @Valid @RequestBody CustomerRequestDTO dto) {
-        Customer customer = new Customer();
-        customer.setStatus(dto.getStatus());
+    public ResponseEntity<CustomerResponseDTO> update(@PathVariable Long id, @Valid @RequestBody CustomerRequestDTO dto) {
+        Customer customer = CustomerMapper.toEntity(dto);
 
-        Optional<Customer> updatedCustomer = customerService.update(id, customer);
+        Optional<Customer> updatedCustomer = customerService.updateById(id, customer);
 
         if (updatedCustomer.isPresent()) {
-            return ResponseEntity.ok(updatedCustomer.get());
+            return ResponseEntity.ok(CustomerMapper.toResponse(updatedCustomer.get()));
         }
 
         return ResponseEntity.notFound().build();
@@ -73,7 +73,7 @@ public class CustomerController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
-        boolean removed = customerService.delete(id);
+        boolean removed = customerService.deleteById(id);
 
         if (removed) {
             return ResponseEntity.noContent().build();

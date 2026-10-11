@@ -5,8 +5,8 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
-import com.estantedigital.entity.ApiException;
 import com.estantedigital.entity.Employee;
+import com.estantedigital.exception.ApiException;
 import com.estantedigital.repository.EmployeeRepository;
 
 @Service
@@ -19,6 +19,10 @@ public class EmployeeService {
     }
 
     public Employee save(Employee employee) {
+        if (employee == null) {
+            throw new ApiException(400, "Employee is invalid", "Body");
+        }
+
         if (employee.getCpf() == null || employee.getCpf().length() < 11) {
             throw new ApiException(400, "CPF must have 11 digits", "CPF");
         }
@@ -26,7 +30,7 @@ public class EmployeeService {
         return employeeRepository.save(employee);
     }
 
-    public List<Employee> listAll() {
+    public List<Employee> findAll() {
         return employeeRepository.findAll();
     }
 
@@ -34,7 +38,7 @@ public class EmployeeService {
         return employeeRepository.findById(id);
     }
 
-    public Optional<Employee> update(Long id, Employee updatedEmployee) {
+    public Optional<Employee> updateById(Long id, Employee updatedEmployee) {
         Optional<Employee> existingEmployee = employeeRepository.findById(id);
 
         if (existingEmployee.isPresent()) {
@@ -47,7 +51,7 @@ public class EmployeeService {
         return Optional.empty();
     }
 
-    public boolean delete(Long id) {
+    public boolean deleteById(Long id) {
         if (employeeRepository.existsById(id)) {
             employeeRepository.deleteById(id);
             return true;

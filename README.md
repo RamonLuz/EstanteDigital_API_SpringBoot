@@ -73,10 +73,12 @@ src
 
 ## 🏛️ Arquitetura
 
-O projeto segue uma arquitetura em camadas:
+O projeto segue uma arquitetura em camadas com separação clara entre API, regras de negócio, persistência e domínio:
 
 ```
 Controller
+    ↓
+DTO / Mapper
     ↓
 Service
     ↓
@@ -85,9 +87,27 @@ Repository
 Banco de Dados
 ```
 
+Essa organização ajuda a manter o controlador responsável apenas por receber e responder requisições, deixando a conversão e a lógica de negócio em camadas específicas.
+
 ---
 
-## 🔗 Relacionamentos
+## � Padrões e padronização do projeto
+
+Para manter o código consistente e fácil de manter, o projeto segue convenções simples e previsíveis:
+
+* Nomes de classes e métodos em inglês, com camelCase e clareza sem abreviações desnecessárias;
+* DTOs para entrada e saída de dados, sem expor entidades do domínio diretamente nas rotas;
+* Mapeamento explícito entre DTO e entidade por meio de classes Mapper;
+* Mensagens de erro em um único padrão de idioma e estilo;
+* Validação de entrada feita em DTOs e regras de negócio em services;
+* Testes organizados por camada: mapper, service e integração;
+* Documentação alinhada com os endpoints reais implementados.
+
+Essas convenções ajudam a manter a base do projeto mais legível, previsível e fácil de evoluir sem misturar responsabilidades.
+
+---
+
+## �🔗 Relacionamentos
 
 * Um cliente pode possuir vários livros comprados.
 * Uma venda possui:
@@ -153,45 +173,47 @@ http://localhost:8080/h2-console
 
 ### Livros
 
-| Método | Endpoint    |
-| ------ | ----------- |
-| GET    | /Books      |
-| GET    | /Books/{id} |
-| POST   | /Books      |
-| PUT    | /Books/{id} |
-| DELETE | /Books/{id} |
+| Método | Endpoint       |
+| ------ | -------------- |
+| GET    | /books         |
+| GET    | /books/{id}    |
+| POST   | /books         |
+| PUT    | /books/{id}    |
+| DELETE | /books/{id}    |
 
 ---
 
 ### Clientes
 
-| Método | Endpoint       |
-| ------ | -------------- |
-| GET    | /Customer      |
-| GET    | /Customer/{id} |
-| POST   | /Customer      |
-| PUT    | /Customer/{id} |
-| DELETE | /Customer/{id} |
+| Método | Endpoint          |
+| ------ | ----------------- |
+| GET    | /customers        |
+| GET    | /customers/{id}   |
+| POST   | /customers        |
+| PUT    | /customers/{id}   |
+| DELETE | /customers/{id}   |
 
 ---
 
 ### Funcionários
 
-| Método | Endpoint       |
-| ------ | -------------- |
-| GET    | /Employee      |
-| GET    | /Employee/{id} |
-| POST   | /Employee      |
+| Método | Endpoint            |
+| ------ | ------------------- |
+| GET    | /employees          |
+| GET    | /employees/{id}     |
+| POST   | /employees          |
+| PUT    | /employees/{id}     |
+| DELETE | /employees/{id}     |
 
 ---
 
 ### Vendas
 
-| Método | Endpoint    |
-| ------ | ----------- |
-| GET    | /Sales      |
-| GET    | /Sales/{id} |
-| POST   | /Sales      |
+| Método | Endpoint      |
+| ------ | ------------- |
+| GET    | /sales        |
+| GET    | /sales/{id}   |
+| POST   | /sales        |
 
 ---
 

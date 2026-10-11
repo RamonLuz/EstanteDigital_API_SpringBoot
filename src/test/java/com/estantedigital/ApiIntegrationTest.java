@@ -66,12 +66,13 @@ class ApiIntegrationTest {
 
         String sale = """
                 {
-                  "customer":{"id":%d,"name":"Ana","cpf":"12345678901","status":"ACTIVE"},
-                  "employee":{"id":%d,"name":"Joao","cpf":"12345678902","registrationNumber":1001,"position":"Seller","status":"ACTIVE"},
-                  "book":{"id":%d,"title":"Book for sale","author":"Test Author","price":12.5},
+                  "customerCpf":"12345678901",
+                  "employeeRegistrationNumber":1001,
+                  "bookTitle":"Book for sale",
+                  "bookAuthor":"Test Author",
                   "saleDate":"2026-10-10"
                 }
-                """.formatted(customer.get("id").asLong(), employee.get("id").asLong(), book.get("id").asLong());
+                """;
 
         MvcResult saleResult = mockMvc.perform(post("/sales")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -92,7 +93,7 @@ class ApiIntegrationTest {
                 .andExpect(jsonPath("$.message").value("Book does not exist"));
         mockMvc.perform(post("/sales")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(sale.replace("\"registrationNumber\":1001", "\"registrationNumber\":1002")))
+                        .content(sale.replace("\"employeeRegistrationNumber\":1001", "\"employeeRegistrationNumber\":1002")))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Employee does not exist"));
 
@@ -250,17 +251,17 @@ class ApiIntegrationTest {
     void endpointsShouldReturnClearErrorForNonNumericIds() throws Exception {
         mockMvc.perform(get("/books/not-a-number"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("O ID deve ser numérico"))
+                .andExpect(jsonPath("$.message").value("ID must be numeric"))
                 .andExpect(jsonPath("$.field").value("ID"));
         mockMvc.perform(get("/customers/not-a-number"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("O ID deve ser numérico"));
+                .andExpect(jsonPath("$.message").value("ID must be numeric"));
         mockMvc.perform(get("/employees/not-a-number"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("O ID deve ser numérico"));
+                .andExpect(jsonPath("$.message").value("ID must be numeric"));
         mockMvc.perform(get("/sales/not-a-number"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("O ID deve ser numérico"));
+                .andExpect(jsonPath("$.message").value("ID must be numeric"));
     }
 
     private JsonNode createResource(String path, String body) throws Exception {

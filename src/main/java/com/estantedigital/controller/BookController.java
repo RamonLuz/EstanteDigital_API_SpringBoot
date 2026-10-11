@@ -15,7 +15,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.estantedigital.dto.BookRequestDTO;
+import com.estantedigital.dto.BookResponseDTO;
 import com.estantedigital.entity.Book;
+import com.estantedigital.mapper.BookMapper;
 import com.estantedigital.service.BookService;
 
 import jakarta.validation.Valid;
@@ -31,43 +33,39 @@ public class BookController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Book>> getAll() {
-        return ResponseEntity.ok(bookService.listAll());
+    public ResponseEntity<List<BookResponseDTO>> getAll() {
+        return ResponseEntity.ok(bookService.findAll().stream()
+                .map(BookMapper::toResponse)
+                .toList());
     }
 
     @PostMapping
-    public ResponseEntity<Book> create(@Valid @RequestBody BookRequestDTO dto) {
-        Book book = new Book();
-        book.setTitle(dto.getTitle());
-        book.setAuthor(dto.getAuthor());
-        book.setPrice(dto.getPrice());
+    public ResponseEntity<BookResponseDTO> create(@Valid @RequestBody BookRequestDTO dto) {
+        Book book = BookMapper.toEntity(dto);
 
         Book savedBook = bookService.save(book);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedBook);
+        return ResponseEntity.status(HttpStatus.CREATED).body(BookMapper.toResponse(savedBook));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Book> getById(@PathVariable Long id) {
+    public ResponseEntity<BookResponseDTO> getById(@PathVariable Long id) {
         Optional<Book> book = bookService.findById(id);
 
         if (book.isPresent()) {
-            return ResponseEntity.ok(book.get());
+            return ResponseEntity.ok(BookMapper.toResponse(book.get()));
         }
 
         return ResponseEntity.notFound().build();
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Book> update(@PathVariable Long id, @Valid @RequestBody BookRequestDTO dto) {
-        Book book = new Book();
-        book.setTitle(dto.getTitle());
-        book.setAuthor(dto.getAuthor());
-        book.setPrice(dto.getPrice());
+    public ResponseEntity<BookResponseDTO> update(@PathVariable Long id, @Valid @RequestBody BookRequestDTO dto) {
+        Book book = BookMapper.toEntity(dto);
 
-        Optional<Book> updatedBook = bookService.update(id, book);
+        Optional<Book> updatedBook = bookService.updateById(id, book);
 
         if (updatedBook.isPresent()) {
-            return ResponseEntity.ok(updatedBook.get());
+            return ResponseEntity.ok(BookMapper.toResponse(updatedBook.get()));
         }
 
         return ResponseEntity.notFound().build();
@@ -75,7 +73,7 @@ public class BookController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
-        boolean removed = bookService.delete(id);
+        boolean removed = bookService.deleteById(id);
 
         if (removed) {
             return ResponseEntity.noContent().build();

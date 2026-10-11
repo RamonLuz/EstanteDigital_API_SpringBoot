@@ -1,11 +1,17 @@
 package com.estantedigital.dto;
 
-import com.estantedigital.entity.Person;
-
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 
-public class EmployeeRequestDTO extends Person {
+public class EmployeeRequestDTO {
 
+    @NotBlank(message = "Name is required")
+    private String name;
+
+    @NotBlank(message = "CPF is required")
+    private String cpf;
+
+    @Min(value = 1, message = "Registration number must be greater than zero")
     private int registrationNumber;
 
     @NotBlank(message = "Position is required")
@@ -15,6 +21,22 @@ public class EmployeeRequestDTO extends Person {
     private String status;
 
     public EmployeeRequestDTO() {
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getCpf() {
+        return cpf;
+    }
+
+    public void setCpf(String cpf) {
+        this.cpf = cpf;
     }
 
     public int getRegistrationNumber() {

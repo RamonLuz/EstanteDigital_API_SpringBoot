@@ -18,8 +18,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.estantedigital.entity.ApiException;
 import com.estantedigital.entity.Employee;
+import com.estantedigital.exception.ApiException;
 import com.estantedigital.repository.EmployeeRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -67,11 +67,21 @@ class EmployeeServiceTest {
     }
 
     @Test
+    void shouldRejectNullEmployee() {
+        ApiException exception = assertThrows(ApiException.class, () -> employeeService.save(null));
+
+        assertEquals(400, exception.getStatus());
+        assertEquals("Employee is invalid", exception.getMessage());
+        assertEquals("Body", exception.getField());
+        verify(employeeRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
     void shouldListEmployees() {
         Employee employee = newEmployee("Joao", CPF, 1001, "Seller", "ACTIVE");
         when(employeeRepository.findAll()).thenReturn(List.of(employee));
 
-        List<Employee> result = employeeService.listAll();
+        List<Employee> result = employeeService.findAll();
 
         assertEquals(1, result.size());
         assertSame(employee, result.get(0));

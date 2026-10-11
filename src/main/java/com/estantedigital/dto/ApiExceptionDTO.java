@@ -6,6 +6,9 @@ public class ApiExceptionDTO {
     private String message;
     private String field;
 
+    public ApiExceptionDTO() {
+    }
+
     public ApiExceptionDTO(int status, String message, String field) {
         this.status = status;
         this.message = message;
