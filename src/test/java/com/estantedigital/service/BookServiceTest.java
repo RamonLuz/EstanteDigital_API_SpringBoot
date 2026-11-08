@@ -12,6 +12,10 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -45,9 +49,22 @@ class BookServiceTest {
     }
 
     @Test
+    void shouldSearchBooksAndTrimFilters() {
+        Pageable pageable = PageRequest.of(0, 5);
+        Book book = newBook("Clean Code", "Robert Martin", 100.0);
+        Page<Book> expected = new PageImpl<>(List.of(book), pageable, 1);
+        when(bookRepository.search("clean", "martin", pageable)).thenReturn(expected);
+
+        Page<Book> result = bookService.search(" clean ", "martin ", pageable);
+
+        assertEquals(expected, result);
+        verify(bookRepository).search("clean", "martin", pageable);
+    }
+
+    @Test
     void shouldSaveValidBook() {
         Book book = newBook("Clean Code", "Robert Martin", 100.0);
-        when(bookRepository.findAll()).thenReturn(List.of());
+        when(bookRepository.existsByTitleAndAuthor(book.getTitle(), book.getAuthor())).thenReturn(false);
         when(bookRepository.save(book)).thenReturn(book);
 
         Book result = bookService.save(book);
@@ -58,8 +75,6 @@ class BookServiceTest {
 
     @Test
     void shouldRejectNullBook() {
-        when(bookRepository.findAll()).thenReturn(List.of());
-
         ApiException exception = assertThrows(ApiException.class, () -> bookService.save(null));
 
         assertEquals(400, exception.getStatus());
@@ -72,7 +87,7 @@ class BookServiceTest {
     void shouldRejectDuplicateBookByTitleAndAuthor() {
         Book existingBook = newBook("Clean Code", "Robert Martin", 100.0);
         Book duplicateBook = newBook("Clean Code", "Robert Martin", 120.0);
-        when(bookRepository.findAll()).thenReturn(List.of(existingBook));
+        when(bookRepository.existsByTitleAndAuthor("Clean Code", "Robert Martin")).thenReturn(true);
 
         ApiException exception = assertThrows(ApiException.class, () -> bookService.save(duplicateBook));
 
@@ -83,7 +98,6 @@ class BookServiceTest {
     @Test
     void shouldRejectBookWithoutPrice() {
         Book book = newBook("Clean Code", "Robert Martin", null);
-        when(bookRepository.findAll()).thenReturn(List.of());
 
         ApiException exception = assertThrows(ApiException.class, () -> bookService.save(book));
 
@@ -93,8 +107,6 @@ class BookServiceTest {
 
     @Test
     void shouldRejectZeroOrNegativePrice() {
-        when(bookRepository.findAll()).thenReturn(List.of());
-
         ApiException zeroPrice = assertThrows(ApiException.class,
                 () -> bookService.save(newBook("Zero Price", "Author", 0.0)));
         ApiException negativePrice = assertThrows(ApiException.class,
@@ -123,7 +135,7 @@ class BookServiceTest {
         when(bookRepository.findById(1L)).thenReturn(Optional.of(existingBook));
         when(bookRepository.save(existingBook)).thenReturn(existingBook);
 
-        Optional<Book> result = bookService.update(1L, updatedBook);
+        Optional<Book> result = bookService.updateById(1L, updatedBook);
 
         assertTrue(result.isPresent());
         assertSame(existingBook, result.get());
@@ -137,7 +149,7 @@ class BookServiceTest {
     void shouldNotUpdateMissingBook() {
         when(bookRepository.findById(1L)).thenReturn(Optional.empty());
 
-        Optional<Book> result = bookService.update(1L, newBook("Title", "Author", 10.0));
+        Optional<Book> result = bookService.updateById(1L, newBook("Title", "Author", 10.0));
 
         assertFalse(result.isPresent());
         verify(bookRepository, never()).save(org.mockito.ArgumentMatchers.any());
@@ -147,7 +159,7 @@ class BookServiceTest {
     void shouldDeleteExistingBook() {
         when(bookRepository.existsById(1L)).thenReturn(true);
 
-        assertTrue(bookService.delete(1L));
+        assertTrue(bookService.deleteById(1L));
 
         verify(bookRepository).deleteById(1L);
     }
@@ -156,7 +168,7 @@ class BookServiceTest {
     void shouldNotDeleteMissingBook() {
         when(bookRepository.existsById(1L)).thenReturn(false);
 
-        assertFalse(bookService.delete(1L));
+        assertFalse(bookService.deleteById(1L));
 
         verify(bookRepository, never()).deleteById(1L);
     }

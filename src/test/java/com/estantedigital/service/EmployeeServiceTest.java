@@ -12,6 +12,10 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -36,12 +40,41 @@ class EmployeeServiceTest {
     @Test
     void shouldSaveEmployeeWithValidCpf() {
         Employee employee = newEmployee("Joao", CPF, 1001, "Seller", "ACTIVE");
+        when(employeeRepository.existsByCpf(CPF)).thenReturn(false);
+        when(employeeRepository.existsByRegistrationNumber(1001)).thenReturn(false);
         when(employeeRepository.save(employee)).thenReturn(employee);
 
         Employee result = employeeService.save(employee);
 
         assertSame(employee, result);
         verify(employeeRepository).save(employee);
+    }
+
+    @Test
+    void shouldRejectEmployeeWithDuplicateCpf() {
+        Employee employee = newEmployee("Joao", CPF, 1001, "Seller", "ACTIVE");
+        when(employeeRepository.existsByCpf(CPF)).thenReturn(true);
+
+        ApiException exception = assertThrows(ApiException.class, () -> employeeService.save(employee));
+
+        assertEquals(409, exception.getStatus());
+        assertEquals("CPF already registered", exception.getMessage());
+        assertEquals("CPF", exception.getField());
+        verify(employeeRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void shouldRejectEmployeeWithDuplicateRegistrationNumber() {
+        Employee employee = newEmployee("Joao", CPF, 1001, "Seller", "ACTIVE");
+        when(employeeRepository.existsByCpf(CPF)).thenReturn(false);
+        when(employeeRepository.existsByRegistrationNumber(1001)).thenReturn(true);
+
+        ApiException exception = assertThrows(ApiException.class, () -> employeeService.save(employee));
+
+        assertEquals(409, exception.getStatus());
+        assertEquals("Registration number already registered", exception.getMessage());
+        assertEquals("registrationNumber", exception.getField());
+        verify(employeeRepository, never()).save(org.mockito.ArgumentMatchers.any());
     }
 
     @Test
@@ -88,6 +121,19 @@ class EmployeeServiceTest {
     }
 
     @Test
+    void shouldSearchEmployeesByFilters() {
+        Pageable pageable = PageRequest.of(0, 10);
+        Employee employee = newEmployee("Joao Silva", CPF, 1001, "Seller", "ACTIVE");
+        Page<Employee> expected = new PageImpl<>(List.of(employee), pageable, 1);
+        when(employeeRepository.search("joao", CPF, "ACTIVE", 1001, pageable)).thenReturn(expected);
+
+        Page<Employee> result = employeeService.search(" joao ", CPF, " ACTIVE ", 1001, pageable);
+
+        assertEquals(expected, result);
+        verify(employeeRepository).search("joao", CPF, "ACTIVE", 1001, pageable);
+    }
+
+    @Test
     void shouldFindEmployeeById() {
         Employee employee = newEmployee("Joao", CPF, 1001, "Seller", "ACTIVE");
         when(employeeRepository.findById(1L)).thenReturn(Optional.of(employee));
@@ -105,7 +151,7 @@ class EmployeeServiceTest {
         when(employeeRepository.findById(1L)).thenReturn(Optional.of(employee));
         when(employeeRepository.save(employee)).thenReturn(employee);
 
-        Optional<Employee> result = employeeService.update(1L, updatedEmployee);
+        Optional<Employee> result = employeeService.updateById(1L, updatedEmployee);
 
         assertTrue(result.isPresent());
         assertSame(employee, result.get());
@@ -121,7 +167,7 @@ class EmployeeServiceTest {
     void shouldNotUpdateMissingEmployee() {
         when(employeeRepository.findById(1L)).thenReturn(Optional.empty());
 
-        Optional<Employee> result = employeeService.update(1L,
+        Optional<Employee> result = employeeService.updateById(1L,
                 newEmployee("Joao", CPF, 1001, "Seller", "INACTIVE"));
 
         assertFalse(result.isPresent());
@@ -132,7 +178,7 @@ class EmployeeServiceTest {
     void shouldDeleteExistingEmployee() {
         when(employeeRepository.existsById(1L)).thenReturn(true);
 
-        assertTrue(employeeService.delete(1L));
+        assertTrue(employeeService.deleteById(1L));
 
         verify(employeeRepository).deleteById(1L);
     }
@@ -141,7 +187,7 @@ class EmployeeServiceTest {
     void shouldNotDeleteMissingEmployee() {
         when(employeeRepository.existsById(1L)).thenReturn(false);
 
-        assertFalse(employeeService.delete(1L));
+        assertFalse(employeeService.deleteById(1L));
 
         verify(employeeRepository, never()).deleteById(1L);
     }

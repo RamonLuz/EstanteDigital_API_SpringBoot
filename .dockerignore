@@ -1,0 +1,8 @@
+.git
+.gitignore
+.idea
+.vscode
+target
+previous-root-build
+build.log
+README.md

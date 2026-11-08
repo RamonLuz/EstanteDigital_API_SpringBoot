@@ -3,6 +3,8 @@ package com.estantedigital.service;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.estantedigital.entity.Customer;
@@ -40,6 +42,10 @@ public class CustomerService {
         return customerRepository.findAll();
     }
 
+    public Page<Customer> search(String name, String cpf, String status, Pageable pageable) {
+        return customerRepository.search(normalize(name), normalize(cpf), normalize(status), pageable);
+    }
+
     public Optional<Customer> findById(Long id) {
         return customerRepository.findById(id);
     }
@@ -68,5 +74,9 @@ public class CustomerService {
         }
 
         return false;
+    }
+
+    private String normalize(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 }

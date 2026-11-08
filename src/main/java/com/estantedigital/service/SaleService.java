@@ -1,9 +1,13 @@
 package com.estantedigital.service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.estantedigital.entity.Book;
 import com.estantedigital.entity.Customer;
@@ -35,10 +39,23 @@ public class SaleService {
         return saleRepository.findAll();
     }
 
+    public Page<Sale> search(
+            String customerCpf,
+            String bookTitle,
+            Integer employeeRegistrationNumber,
+            Pageable pageable) {
+        return saleRepository.search(
+                normalize(customerCpf),
+                normalize(bookTitle),
+                employeeRegistrationNumber,
+                pageable);
+    }
+
     public Optional<Sale> findById(Long id) {
         return saleRepository.findById(id);
     }
 
+    @Transactional
     public Sale save(Sale sale) {
         if (sale == null || sale.getCustomer() == null || sale.getBook() == null || sale.getEmployee() == null) {
             throw new ApiException(400, "Sale is invalid", "Body");
@@ -59,25 +76,14 @@ public class SaleService {
         sale.setBook(book);
         sale.setEmployee(employee);
 
-        syncCustomerPurchases(sale);
+        if (customer.getPurchases() == null) {
+            customer.setPurchases(new ArrayList<>());
+        }
+        customer.getPurchases().add(book);
         return saleRepository.save(sale);
     }
 
-    private void syncCustomerPurchases(Sale sale) {
-        Optional<Customer> existingCustomer = customerRepository.findByCpf(sale.getCustomer().getCpf());
-
-        if (existingCustomer.isPresent()) {
-            Book book = bookRepository.findByTitleAndAuthor(sale.getBook().getTitle(), sale.getBook().getAuthor())
-                    .stream()
-                    .findFirst()
-                    .orElse(null);
-
-            if (book != null) {
-                Customer customer = existingCustomer.get();
-                if (customer.getPurchases() != null) {
-                    customer.getPurchases().add(book);
-                }
-            }
-        }
+    private String normalize(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 }

@@ -3,6 +3,8 @@ package com.estantedigital.service;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.estantedigital.entity.Book;
@@ -22,19 +24,21 @@ public class BookService {
         return bookRepository.findAll();
     }
 
-    public Book save(Book book) {
-        List<Book> books = bookRepository.findAll();
+    public Page<Book> search(String title, String author, Pageable pageable) {
+        return bookRepository.search(normalize(title), normalize(author), pageable);
+    }
 
+    public Book save(Book book) {
         if (book == null) {
             throw new ApiException(400, "Book is invalid", "Body");
         }
 
-        if (books.contains(book)) {
-            throw new ApiException(400, "Book already exists for this author and title", "Body");
-        }
-
         if (book.getPrice() == null || book.getPrice() <= 0) {
             throw new ApiException(400, "Price is invalid", "Body");
+        }
+
+        if (bookRepository.existsByTitleAndAuthor(book.getTitle(), book.getAuthor())) {
+            throw new ApiException(400, "Book already exists for this author and title", "Body");
         }
 
         return bookRepository.save(book);
@@ -67,5 +71,9 @@ public class BookService {
         }
 
         return false;
+    }
+
+    private String normalize(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 }

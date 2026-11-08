@@ -13,6 +13,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -79,6 +83,19 @@ class SaleServiceTest {
         Optional<Sale> result = saleService.findById(1L);
 
         assertFalse(result.isPresent());
+    }
+
+    @Test
+    void shouldSearchSalesByCustomerBookAndEmployee() {
+        Pageable pageable = PageRequest.of(0, 10);
+        Sale sale = new Sale();
+        Page<Sale> expected = new PageImpl<>(List.of(sale), pageable, 1);
+        when(saleRepository.search("123", "clean", 1001, pageable)).thenReturn(expected);
+
+        Page<Sale> result = saleService.search(" 123 ", " clean ", 1001, pageable);
+
+        assertEquals(expected, result);
+        verify(saleRepository).search("123", "clean", 1001, pageable);
     }
 
     @Test
@@ -159,6 +176,7 @@ class SaleServiceTest {
 
         assertSame(sale, saleService.save(sale));
 
+        assertEquals(List.of(book), customer.getPurchases());
         verify(saleRepository).save(sale);
     }
 

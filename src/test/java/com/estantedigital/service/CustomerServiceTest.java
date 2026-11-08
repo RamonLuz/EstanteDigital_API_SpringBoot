@@ -12,6 +12,10 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -105,6 +109,19 @@ class CustomerServiceTest {
     }
 
     @Test
+    void shouldSearchCustomersByNameCpfAndStatus() {
+        Pageable pageable = PageRequest.of(1, 10);
+        Customer customer = newCustomer("Ana Silva", CPF, "ACTIVE");
+        Page<Customer> expected = new PageImpl<>(List.of(customer), pageable, 11);
+        when(customerRepository.search("ana", "123", "ACTIVE", pageable)).thenReturn(expected);
+
+        Page<Customer> result = customerService.search(" ana ", "123", " ACTIVE ", pageable);
+
+        assertEquals(expected, result);
+        verify(customerRepository).search("ana", "123", "ACTIVE", pageable);
+    }
+
+    @Test
     void shouldFindCustomerById() {
         Customer customer = newCustomer("Ana", CPF, "ACTIVE");
         when(customerRepository.findById(1L)).thenReturn(Optional.of(customer));
@@ -133,7 +150,7 @@ class CustomerServiceTest {
         when(customerRepository.findById(1L)).thenReturn(Optional.of(customer));
         when(customerRepository.save(customer)).thenReturn(customer);
 
-        Optional<Customer> result = customerService.update(1L, updatedCustomer);
+        Optional<Customer> result = customerService.updateById(1L, updatedCustomer);
 
         assertTrue(result.isPresent());
         assertSame(customer, result.get());
@@ -147,7 +164,7 @@ class CustomerServiceTest {
     void shouldNotUpdateMissingCustomer() {
         when(customerRepository.findById(1L)).thenReturn(Optional.empty());
 
-        Optional<Customer> result = customerService.update(1L, newCustomer("Ana", CPF, "INACTIVE"));
+        Optional<Customer> result = customerService.updateById(1L, newCustomer("Ana", CPF, "INACTIVE"));
 
         assertFalse(result.isPresent());
         verify(customerRepository, never()).save(org.mockito.ArgumentMatchers.any());
@@ -157,7 +174,7 @@ class CustomerServiceTest {
     void shouldDeleteExistingCustomer() {
         when(customerRepository.existsById(1L)).thenReturn(true);
 
-        assertTrue(customerService.delete(1L));
+        assertTrue(customerService.deleteById(1L));
 
         verify(customerRepository).deleteById(1L);
     }
@@ -166,7 +183,7 @@ class CustomerServiceTest {
     void shouldNotDeleteMissingCustomer() {
         when(customerRepository.existsById(1L)).thenReturn(false);
 
-        assertFalse(customerService.delete(1L));
+        assertFalse(customerService.deleteById(1L));
 
         verify(customerRepository, never()).deleteById(1L);
     }

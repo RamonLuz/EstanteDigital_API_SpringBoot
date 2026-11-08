@@ -129,9 +129,10 @@ A aplicação utiliza um tratamento global de exceções através do:
 
 Fornecendo respostas padronizadas para:
 
-* Campos obrigatórios não preenchidos;
-* Body da requisição ausente;
-* Tipos inválidos;
+* Campos obrigatórios, formatos inválidos e valores fora do intervalo esperado;
+* Body ausente ou JSON inválido;
+* Parâmetros de rota com tipos inválidos;
+* Conflitos de integridade do banco de dados;
 * Regras de negócio da aplicação.
 
 Exemplo:
@@ -139,10 +140,15 @@ Exemplo:
 ```json
 {
   "status": 400,
-  "message": "Cpf deve ter 11 digitos",
-  "field": "CPF"
+  "message": "cpf: CPF must contain exactly 11 digits",
+  "field": "cpf"
 }
 ```
+
+As validações são feitas com Jakarta Bean Validation (`@Valid`) nos DTOs. Erros
+de validação listam os campos e mensagens no campo `message`; `field` informa o
+primeiro campo. A dependência já incluída no projeto é open source e não requer
+assinatura de serviço externo.
 
 ---
 
@@ -163,9 +169,8 @@ spring:
 
 ### Console H2
 
-```
-http://localhost:8080/h2-console
-```
+O console H2 está desativado; mantenha-o assim fora de um ambiente local
+isolado.
 
 ---
 
@@ -217,6 +222,84 @@ http://localhost:8080/h2-console
 
 ---
 
+## 📄 Paginação e filtros
+
+As listagens `GET /books`, `/customers`, `/employees` e `/sales` retornam uma
+resposta paginada. `page` começa em `0`; `size` aceita valores de `1` a `100`.
+Sem parâmetros, a API retorna a primeira página com até 10 itens, ordenada por ID.
+
+Exemplos:
+
+```text
+GET /books?page=0&size=10&title=clean&author=martin
+GET /customers?page=0&size=10&name=ana&status=ACTIVE
+GET /employees?page=1&size=20&cpf=123&registrationNumber=1001
+GET /sales?page=0&size=10&customerCpf=123&bookTitle=clean
+```
+
+Filtros de texto por nome, título e autor não diferenciam maiúsculas de
+minúsculas e aceitam correspondência parcial. CPF permite correspondência
+parcial; status e número de registro são comparações exatas.
+
+A resposta contém `content`, `page`, `size`, `totalElements`, `totalPages`,
+`first` e `last`. As consultas são paginadas no banco de dados via Spring Data
+JPA, sem serviços externos ou dependências pagas.
+
+---
+
+## 🔐 Autenticação e autorização
+
+A API usa Spring Security com JWT Bearer assinado por HMAC-SHA256. Não são aceitos
+tokens sem assinatura. O endpoint `POST /auth/login` valida o usuário configurado
+no ambiente e retorna um token válido por uma hora.
+
+Todas as rotas são públicas e podem ser chamadas sem login ou token. O endpoint
+de login e o JWT ficam disponíveis apenas para demonstrar autenticação; enviar
+um token válido não é necessário para usar a API. Os dados de clientes,
+funcionários e vendas também ficam expostos neste modo de estudo.
+
+As variáveis são opcionais no modo de estudo: sem configurá-las, o login
+demonstrativo usa `student` / `student` e uma chave local pública, inadequada
+para produção. Configure suas próprias variáveis para substituir esses valores:
+
+| Variável | Descrição |
+| -------- | --------- |
+| `APP_AUTH_USERNAME` | Usuário permitido para autenticação |
+| `APP_AUTH_PASSWORD` | Senha do usuário; armazenada em memória com hash BCrypt |
+| `APP_JWT_SECRET` | Chave HMAC em Base64 com pelo menos 32 bytes |
+
+Gere uma chave com `openssl rand -base64 32`. Não reutilize a chave de
+desenvolvimento nem armazene credenciais privadas no repositório. O console H2
+fica desabilitado. Não publique esta configuração em produção: operações e
+dados estão acessíveis sem autenticação.
+
+Exemplo PowerShell:
+
+```powershell
+$env:APP_AUTH_USERNAME = "admin"
+$env:APP_AUTH_PASSWORD = "<sua-senha-segura>"
+$env:APP_JWT_SECRET = "<chave-base64-gerada>"
+.\mvnw.cmd spring-boot:run
+```
+
+Opcionalmente, obtenha um token para demonstrar o JWT:
+
+```http
+POST /auth/login
+Content-Type: application/json
+
+{"username":"admin","password":"<sua-senha-segura>"}
+```
+
+O token retornado pode ser enviado como Bearer para demonstrar o uso de JWT,
+mas não é exigido pelas rotas:
+
+```http
+Authorization: Bearer <accessToken>
+```
+
+---
+
 ## ▶️ Executando o projeto
 
 Clone o repositório:
@@ -231,7 +314,7 @@ Entre na pasta:
 cd EstanteDigital
 ```
 
-Execute:
+Execute (o modo público de estudo inicia sem configuração adicional):
 
 ```bash
 ./mvnw spring-boot:run
@@ -242,6 +325,22 @@ A aplicação será iniciada em:
 ```
 http://localhost:8080
 ```
+
+### Executando com Docker Compose
+
+Com Docker Desktop (ou Docker Engine com o plugin Compose) instalado, na raiz
+do projeto execute:
+
+```powershell
+docker compose up --build
+```
+
+A API ficará disponível em `http://localhost:8080`. Para parar e remover o
+container, pressione `Ctrl+C` e execute `docker compose down`. A configuração
+usa H2 em memória; os dados são reiniciados quando o container é recriado.
+As credenciais e a chave JWT padrão são apenas para estudo. Defina as variáveis
+de ambiente antes de iniciar se desejar substituí-las. Como os endpoints estão
+públicos neste modo, não exponha o serviço a redes não confiáveis.
 
 ---
 

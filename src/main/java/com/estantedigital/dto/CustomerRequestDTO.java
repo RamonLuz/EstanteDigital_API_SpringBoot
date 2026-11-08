@@ -1,10 +1,7 @@
 package com.estantedigital.dto;
 
-import java.util.List;
-
-import com.estantedigital.entity.Book;
-
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 
 public class CustomerRequestDTO {
 
@@ -12,12 +9,12 @@ public class CustomerRequestDTO {
     private String name;
 
     @NotBlank(message = "CPF is required")
+    @Pattern(regexp = "\\d{11}", message = "CPF must contain exactly 11 digits")
     private String cpf;
 
     @NotBlank(message = "Status is required")
+    @Pattern(regexp = "ACTIVE|INACTIVE", message = "Status must be ACTIVE or INACTIVE")
     private String status;
-
-    private List<Book> purchases;
 
     public CustomerRequestDTO() {
     }
@@ -46,11 +43,4 @@ public class CustomerRequestDTO {
         this.status = status;
     }
 
-    public List<Book> getPurchases() {
-        return purchases;
-    }
-
-    public void setPurchases(List<Book> purchases) {
-        this.purchases = purchases;
-    }
 }

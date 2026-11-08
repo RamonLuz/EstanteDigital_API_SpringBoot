@@ -16,7 +16,6 @@ public final class CustomerMapper {
         customer.setName(dto.getName());
         customer.setCpf(dto.getCpf());
         customer.setStatus(dto.getStatus());
-        customer.setPurchases(dto.getPurchases());
         return customer;
     }
 

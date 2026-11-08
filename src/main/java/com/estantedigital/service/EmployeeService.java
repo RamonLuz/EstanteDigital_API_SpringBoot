@@ -3,6 +3,8 @@ package com.estantedigital.service;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.estantedigital.entity.Employee;
@@ -26,12 +28,32 @@ public class EmployeeService {
         if (employee.getCpf() == null || employee.getCpf().length() < 11) {
             throw new ApiException(400, "CPF must have 11 digits", "CPF");
         }
+        if (employeeRepository.existsByCpf(employee.getCpf())) {
+            throw new ApiException(409, "CPF already registered", "CPF");
+        }
+        if (employeeRepository.existsByRegistrationNumber(employee.getRegistrationNumber())) {
+            throw new ApiException(409, "Registration number already registered", "registrationNumber");
+        }
 
         return employeeRepository.save(employee);
     }
 
     public List<Employee> findAll() {
         return employeeRepository.findAll();
+    }
+
+    public Page<Employee> search(
+            String name,
+            String cpf,
+            String status,
+            Integer registrationNumber,
+            Pageable pageable) {
+        return employeeRepository.search(
+                normalize(name),
+                normalize(cpf),
+                normalize(status),
+                registrationNumber,
+                pageable);
     }
 
     public Optional<Employee> findById(Long id) {
@@ -58,5 +80,9 @@ public class EmployeeService {
         }
 
         return false;
+    }
+
+    private String normalize(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 }
