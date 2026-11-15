@@ -67,7 +67,7 @@ class ApiIntegrationTest {
                 .andExpect(status().isOk())
                 .andReturn();
         accessToken = objectMapper.readTree(loginResult.getResponse().getContentAsString())
-                .get("accessToken").asText();
+                .get("accessToken").asString();
     }
 
     @Test
@@ -95,6 +95,20 @@ class ApiIntegrationTest {
         mockMvc.perform(get("/customers")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer eyJhbGciOiJub25lIn0.eyJzdWIiOiJ0ZXN0LXVzZXIifQ."))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void openApiDocumentationShouldExposeApiPathsAndOptionalJwtScheme() throws Exception {
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.info.title").value("EstanteDigital API"))
+                .andExpect(jsonPath("$.paths['/books']").exists())
+                .andExpect(jsonPath("$.paths['/auth/login']").exists())
+                .andExpect(jsonPath("$.components.securitySchemes.bearerAuth.scheme").value("bearer"))
+                .andExpect(jsonPath("$.security").doesNotExist());
+
+        mockMvc.perform(get("/swagger-ui/index.html"))
+                .andExpect(status().isOk());
     }
 
     @Test
@@ -150,7 +164,7 @@ class ApiIntegrationTest {
         JsonNode customer = createResource("/customers", """
                 {"name":"Ana","cpf":"12345678901","status":"ACTIVE"}
                 """);
-        JsonNode employee = createResource("/employees", """
+        createResource("/employees", """
                 {"name":"Joao","cpf":"12345678902","registrationNumber":1001,"position":"Seller","status":"ACTIVE"}
                 """);
 
@@ -231,7 +245,7 @@ class ApiIntegrationTest {
                         .content("""
                                 {"title":"Clean Code Updated","author":"Robert Martin","price":110.0}
                                 """)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isConflict());
         mockMvc.perform(authenticated(post("/books")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -266,7 +280,7 @@ class ApiIntegrationTest {
                         .content("""
                                 {"name":"Another Name","cpf":"12345678901","status":"ACTIVE"}
                                 """)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isConflict());
         mockMvc.perform(authenticated(post("/customers")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -277,9 +291,11 @@ class ApiIntegrationTest {
         mockMvc.perform(authenticated(put("/customers/{id}", customerId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"name":"Ana","cpf":"12345678901","status":"INACTIVE"}
+                                {"name":"Ana Silva","cpf":"10987654321","status":"INACTIVE"}
                                 """)))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Ana Silva"))
+                .andExpect(jsonPath("$.cpf").value("10987654321"))
                 .andExpect(jsonPath("$.status").value("INACTIVE"));
         mockMvc.perform(authenticated(delete("/customers/{id}", customerId)))
                 .andExpect(status().isNoContent());
@@ -326,9 +342,13 @@ class ApiIntegrationTest {
         mockMvc.perform(authenticated(put("/employees/{id}", employeeId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"name":"Joao","cpf":"12345678902","registrationNumber":1001,"position":"Seller","status":"INACTIVE"}
+                                {"name":"Joao Silva","cpf":"10987654322","registrationNumber":2002,"position":"Manager","status":"INACTIVE"}
                                 """)))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Joao Silva"))
+                .andExpect(jsonPath("$.cpf").value("10987654322"))
+                .andExpect(jsonPath("$.registrationNumber").value(2002))
+                .andExpect(jsonPath("$.position").value("Manager"))
                 .andExpect(jsonPath("$.status").value("INACTIVE"));
         mockMvc.perform(authenticated(delete("/employees/{id}", employeeId)))
                 .andExpect(status().isNoContent());

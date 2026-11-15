@@ -18,6 +18,10 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
 
     boolean existsByRegistrationNumber(int registrationNumber);
 
+    boolean existsByCpfAndIdNot(String cpf, Long id);
+
+    boolean existsByRegistrationNumberAndIdNot(int registrationNumber, Long id);
+
     @Query("""
             select e from Employee e
             where (:name is null or lower(e.name) like lower(concat('%', :name, '%')))

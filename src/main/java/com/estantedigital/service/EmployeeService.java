@@ -25,9 +25,7 @@ public class EmployeeService {
             throw new ApiException(400, "Employee is invalid", "Body");
         }
 
-        if (employee.getCpf() == null || employee.getCpf().length() < 11) {
-            throw new ApiException(400, "CPF must have 11 digits", "CPF");
-        }
+        validate(employee);
         if (employeeRepository.existsByCpf(employee.getCpf())) {
             throw new ApiException(409, "CPF already registered", "CPF");
         }
@@ -36,6 +34,24 @@ public class EmployeeService {
         }
 
         return employeeRepository.save(employee);
+    }
+
+    private void validate(Employee employee) {
+        if (employee.getName() == null || employee.getName().isBlank()) {
+            throw new ApiException(400, "Name is required", "name");
+        }
+        if (employee.getCpf() == null || !employee.getCpf().matches("\\d{11}")) {
+            throw new ApiException(400, "CPF must have 11 digits", "CPF");
+        }
+        if (employee.getRegistrationNumber() < 1) {
+            throw new ApiException(400, "Registration number must be greater than zero", "registrationNumber");
+        }
+        if (employee.getPosition() == null || employee.getPosition().isBlank()) {
+            throw new ApiException(400, "Position is required", "position");
+        }
+        if (!"ACTIVE".equals(employee.getStatus()) && !"INACTIVE".equals(employee.getStatus())) {
+            throw new ApiException(400, "Status must be ACTIVE or INACTIVE", "status");
+        }
     }
 
     public List<Employee> findAll() {
@@ -61,10 +77,28 @@ public class EmployeeService {
     }
 
     public Optional<Employee> updateById(Long id, Employee updatedEmployee) {
+        if (updatedEmployee == null) {
+            throw new ApiException(400, "Employee is invalid", "Body");
+        }
+        validate(updatedEmployee);
+
         Optional<Employee> existingEmployee = employeeRepository.findById(id);
 
         if (existingEmployee.isPresent()) {
             Employee employee = existingEmployee.get();
+            if (!employee.getCpf().equals(updatedEmployee.getCpf())
+                    && employeeRepository.existsByCpfAndIdNot(updatedEmployee.getCpf(), id)) {
+                throw new ApiException(409, "CPF already registered", "CPF");
+            }
+            if (employee.getRegistrationNumber() != updatedEmployee.getRegistrationNumber()
+                    && employeeRepository.existsByRegistrationNumberAndIdNot(
+                            updatedEmployee.getRegistrationNumber(), id)) {
+                throw new ApiException(409, "Registration number already registered", "registrationNumber");
+            }
+            employee.setName(updatedEmployee.getName());
+            employee.setCpf(updatedEmployee.getCpf());
+            employee.setRegistrationNumber(updatedEmployee.getRegistrationNumber());
+            employee.setPosition(updatedEmployee.getPosition());
             employee.setStatus(updatedEmployee.getStatus());
             employeeRepository.save(employee);
             return Optional.of(employee);

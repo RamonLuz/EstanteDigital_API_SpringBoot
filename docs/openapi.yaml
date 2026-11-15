@@ -1,0 +1,588 @@
+openapi: 3.1.0
+info:
+  title: EstanteDigital API
+  version: 1.0.0
+  description: >-
+    API REST de estudo para livros, clientes, funcionários e vendas.
+    Todas as rotas estão públicas atualmente; o login JWT é demonstrativo e
+    não é exigido para acessar os recursos.
+servers:
+  - url: http://localhost:8080
+tags:
+  - name: Health
+  - name: Auth
+  - name: Books
+  - name: Customers
+  - name: Employees
+  - name: Sales
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Verifica a disponibilidade da aplicação
+      operationId: getHealth
+      responses:
+        "200":
+          description: Aplicação disponível
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Emite um token JWT demonstrativo
+      description: Não é necessário autenticar para usar os demais endpoints.
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Token emitido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          description: Usuário ou senha inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /books:
+    get:
+      tags: [Books]
+      summary: Lista livros com paginação e filtros
+      operationId: searchBooks
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+        - name: title
+          in: query
+          schema: { type: string }
+        - name: author
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Página de livros
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookPage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+    post:
+      tags: [Books]
+      summary: Cadastra um livro
+      operationId: createBook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookRequest"
+      responses:
+        "201":
+          description: Livro criado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Book"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /books/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [Books]
+      summary: Busca livro por ID
+      operationId: getBook
+      responses:
+        "200":
+          description: Livro encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Book"
+        "404":
+          description: Livro não encontrado
+    put:
+      tags: [Books]
+      summary: Substitui os campos editáveis de um livro
+      operationId: updateBook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookRequest"
+      responses:
+        "200":
+          description: Livro atualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Book"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: Livro não encontrado
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      tags: [Books]
+      summary: Remove um livro
+      operationId: deleteBook
+      responses:
+        "204":
+          description: Livro removido
+        "404":
+          description: Livro não encontrado
+  /customers:
+    get:
+      tags: [Customers]
+      summary: Lista clientes com paginação e filtros
+      operationId: searchCustomers
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+        - name: name
+          in: query
+          schema: { type: string }
+        - name: cpf
+          in: query
+          description: Pesquisa parcial do CPF.
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { type: string, enum: [ACTIVE, INACTIVE] }
+      responses:
+        "200":
+          description: Página de clientes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerPage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+    post:
+      tags: [Customers]
+      summary: Cadastra um cliente
+      operationId: createCustomer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomerRequest"
+      responses:
+        "201":
+          description: Cliente criado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /customers/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [Customers]
+      summary: Busca cliente por ID
+      operationId: getCustomer
+      responses:
+        "200":
+          description: Cliente encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+        "404":
+          description: Cliente não encontrado
+    put:
+      tags: [Customers]
+      summary: Substitui os campos editáveis de um cliente
+      operationId: updateCustomer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomerRequest"
+      responses:
+        "200":
+          description: Cliente atualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: Cliente não encontrado
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      tags: [Customers]
+      summary: Remove um cliente
+      operationId: deleteCustomer
+      responses:
+        "204":
+          description: Cliente removido
+        "404":
+          description: Cliente não encontrado
+  /employees:
+    get:
+      tags: [Employees]
+      summary: Lista funcionários com paginação e filtros
+      operationId: searchEmployees
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+        - name: name
+          in: query
+          schema: { type: string }
+        - name: cpf
+          in: query
+          description: Pesquisa parcial do CPF.
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { type: string, enum: [ACTIVE, INACTIVE] }
+        - name: registrationNumber
+          in: query
+          schema: { type: integer, minimum: 1 }
+      responses:
+        "200":
+          description: Página de funcionários
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmployeePage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+    post:
+      tags: [Employees]
+      summary: Cadastra um funcionário
+      operationId: createEmployee
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmployeeRequest"
+      responses:
+        "201":
+          description: Funcionário criado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Employee"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /employees/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [Employees]
+      summary: Busca funcionário por ID
+      operationId: getEmployee
+      responses:
+        "200":
+          description: Funcionário encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Employee"
+        "404":
+          description: Funcionário não encontrado
+    put:
+      tags: [Employees]
+      summary: Substitui os campos editáveis de um funcionário
+      operationId: updateEmployee
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmployeeRequest"
+      responses:
+        "200":
+          description: Funcionário atualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Employee"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: Funcionário não encontrado
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      tags: [Employees]
+      summary: Remove um funcionário
+      operationId: deleteEmployee
+      responses:
+        "204":
+          description: Funcionário removido
+        "404":
+          description: Funcionário não encontrado
+  /sales:
+    get:
+      tags: [Sales]
+      summary: Lista vendas com paginação e filtros
+      operationId: searchSales
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+        - name: customerCpf
+          in: query
+          schema: { type: string }
+        - name: bookTitle
+          in: query
+          schema: { type: string }
+        - name: employeeRegistrationNumber
+          in: query
+          schema: { type: integer, minimum: 1 }
+      responses:
+        "200":
+          description: Página de vendas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SalePage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+    post:
+      tags: [Sales]
+      summary: Registra uma venda para cliente, funcionário e livro existentes
+      operationId: createSale
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaleRequest"
+      responses:
+        "201":
+          description: Venda registrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Sale"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /sales/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [Sales]
+      summary: Busca venda por ID
+      operationId: getSale
+      responses:
+        "200":
+          description: Venda encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Sale"
+        "404":
+          description: Venda não encontrada
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+    Page:
+      name: page
+      in: query
+      description: Índice da página, começando em zero.
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    Size:
+      name: size
+      in: query
+      description: Quantidade de itens por página (máximo 100).
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 10
+  responses:
+    BadRequest:
+      description: Entrada inválida ou regra de negócio não atendida
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    Conflict:
+      description: Conflito com um recurso existente
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+  schemas:
+    Health:
+      type: object
+      required: [status, application]
+      properties:
+        status: { type: string, example: UP }
+        application: { type: string, example: estantedigital }
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username: { type: string, minLength: 1 }
+        password: { type: string, minLength: 1, format: password }
+    TokenResponse:
+      type: object
+      required: [accessToken, tokenType, expiresIn]
+      properties:
+        accessToken: { type: string }
+        tokenType: { type: string, example: Bearer }
+        expiresIn: { type: integer, format: int64, example: 3600 }
+    BookRequest:
+      type: object
+      required: [title, author, price]
+      properties:
+        title: { type: string, minLength: 1 }
+        author: { type: string, minLength: 1 }
+        price: { type: number, format: double, exclusiveMinimum: 0 }
+    Book:
+      allOf:
+        - $ref: "#/components/schemas/BookRequest"
+        - type: object
+          required: [id]
+          properties:
+            id: { type: integer, format: int64 }
+    CustomerRequest:
+      type: object
+      required: [name, cpf, status]
+      properties:
+        name: { type: string, minLength: 1 }
+        cpf: { type: string, pattern: "^\\d{11}$" }
+        status: { type: string, enum: [ACTIVE, INACTIVE] }
+    Customer:
+      allOf:
+        - $ref: "#/components/schemas/CustomerRequest"
+        - type: object
+          required: [id]
+          properties:
+            id: { type: integer, format: int64 }
+            purchases:
+              type: [array, "null"]
+              items: { $ref: "#/components/schemas/Book" }
+    EmployeeRequest:
+      type: object
+      required: [name, cpf, registrationNumber, position, status]
+      properties:
+        name: { type: string, minLength: 1 }
+        cpf: { type: string, pattern: "^\\d{11}$" }
+        registrationNumber: { type: integer, minimum: 1 }
+        position: { type: string, minLength: 1 }
+        status: { type: string, enum: [ACTIVE, INACTIVE] }
+    Employee:
+      allOf:
+        - $ref: "#/components/schemas/EmployeeRequest"
+        - type: object
+          required: [id]
+          properties:
+            id: { type: integer, format: int64 }
+    SaleRequest:
+      type: object
+      required: [customerCpf, employeeRegistrationNumber, bookTitle, bookAuthor, saleDate]
+      properties:
+        customerCpf: { type: string, pattern: "^\\d{11}$" }
+        employeeRegistrationNumber: { type: integer, minimum: 1 }
+        bookTitle: { type: string, minLength: 1 }
+        bookAuthor: { type: string, minLength: 1 }
+        saleDate: { type: string, format: date }
+    Sale:
+      type: object
+      required: [id, customer, employee, book, saleDate]
+      properties:
+        id: { type: integer, format: int64 }
+        customer: { $ref: "#/components/schemas/Customer" }
+        employee: { $ref: "#/components/schemas/Employee" }
+        book: { $ref: "#/components/schemas/Book" }
+        saleDate: { type: string, format: date }
+    ApiError:
+      type: object
+      required: [status, message, field]
+      properties:
+        status: { type: integer }
+        message: { type: string }
+        field: { type: string }
+    Pagination:
+      type: object
+      required: [page, size, totalElements, totalPages, first, last]
+      properties:
+        page: { type: integer, minimum: 0 }
+        size: { type: integer, minimum: 1 }
+        totalElements: { type: integer, format: int64, minimum: 0 }
+        totalPages: { type: integer, minimum: 0 }
+        first: { type: boolean }
+        last: { type: boolean }
+    BookPage:
+      allOf:
+        - $ref: "#/components/schemas/Pagination"
+        - type: object
+          required: [content]
+          properties:
+            content:
+              type: array
+              items: { $ref: "#/components/schemas/Book" }
+    CustomerPage:
+      allOf:
+        - $ref: "#/components/schemas/Pagination"
+        - type: object
+          required: [content]
+          properties:
+            content:
+              type: array
+              items: { $ref: "#/components/schemas/Customer" }
+    EmployeePage:
+      allOf:
+        - $ref: "#/components/schemas/Pagination"
+        - type: object
+          required: [content]
+          properties:
+            content:
+              type: array
+              items: { $ref: "#/components/schemas/Employee" }
+    SalePage:
+      allOf:
+        - $ref: "#/components/schemas/Pagination"
+        - type: object
+          required: [content]
+          properties:
+            content:
+              type: array
+              items: { $ref: "#/components/schemas/Sale" }

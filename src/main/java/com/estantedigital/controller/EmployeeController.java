@@ -71,8 +71,7 @@ public class EmployeeController {
 
     @PutMapping("/{id}")
     public ResponseEntity<EmployeeResponseDTO> update(@PathVariable Long id, @Valid @RequestBody EmployeeRequestDTO dto) {
-        Employee employee = new Employee();
-        employee.setStatus(dto.getStatus());
+        Employee employee = EmployeeMapper.toEntity(dto);
 
         Optional<Employee> updatedEmployee = employeeService.updateById(id, employee);
 

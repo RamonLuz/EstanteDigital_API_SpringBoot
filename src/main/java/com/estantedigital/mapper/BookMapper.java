@@ -29,9 +29,4 @@ public final class BookMapper {
                 entity.getPrice());
     }
 
-    public static void applyUpdate(Book entity, BookRequestDTO dto) {
-        entity.setTitle(dto.getTitle());
-        entity.setAuthor(dto.getAuthor());
-        entity.setPrice(dto.getPrice());
-    }
 }

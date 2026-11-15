@@ -20,6 +20,8 @@ public interface BookRepository extends JpaRepository<Book, Long> {
 
     boolean existsByTitleAndAuthor(String title, String author);
 
+    boolean existsByTitleAndAuthorAndIdNot(String title, String author, Long id);
+
     @Query("""
             select b from Book b
             where (:title is null or lower(b.title) like lower(concat('%', :title, '%')))

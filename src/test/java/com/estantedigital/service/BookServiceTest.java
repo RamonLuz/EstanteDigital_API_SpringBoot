@@ -85,7 +85,6 @@ class BookServiceTest {
 
     @Test
     void shouldRejectDuplicateBookByTitleAndAuthor() {
-        Book existingBook = newBook("Clean Code", "Robert Martin", 100.0);
         Book duplicateBook = newBook("Clean Code", "Robert Martin", 120.0);
         when(bookRepository.existsByTitleAndAuthor("Clean Code", "Robert Martin")).thenReturn(true);
 
@@ -143,6 +142,21 @@ class BookServiceTest {
         assertEquals("New Author", existingBook.getAuthor());
         assertEquals(75.0, existingBook.getPrice());
         verify(bookRepository).save(existingBook);
+    }
+
+    @Test
+    void shouldRejectUpdatingBookToAnotherBooksTitleAndAuthor() {
+        Book existingBook = newBook("Old Title", "Old Author", 50.0);
+        Book updatedBook = newBook("Existing Title", "Existing Author", 75.0);
+        when(bookRepository.findById(1L)).thenReturn(Optional.of(existingBook));
+        when(bookRepository.existsByTitleAndAuthorAndIdNot("Existing Title", "Existing Author", 1L))
+                .thenReturn(true);
+
+        ApiException exception = assertThrows(ApiException.class, () -> bookService.updateById(1L, updatedBook));
+
+        assertEquals(409, exception.getStatus());
+        assertEquals("Book already exists for this author and title", exception.getMessage());
+        verify(bookRepository, never()).save(org.mockito.ArgumentMatchers.any());
     }
 
     @Test

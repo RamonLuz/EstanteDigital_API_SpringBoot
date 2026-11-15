@@ -33,9 +33,4 @@ public final class EmployeeMapper {
                 entity.getStatus());
     }
 
-    public static void applyUpdate(Employee entity, EmployeeRequestDTO dto) {
-        if (dto.getStatus() != null) {
-            entity.setStatus(dto.getStatus());
-        }
-    }
 }

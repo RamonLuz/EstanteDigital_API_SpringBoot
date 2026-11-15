@@ -25,17 +25,24 @@ public class CustomerService {
             throw new ApiException(400, "Customer is invalid", "Body");
         }
 
-        Optional<Customer> existingCustomer = customerRepository.findByCpf(customer.getCpf());
-
-        if (existingCustomer.isPresent() && existingCustomer.get().equals(customer)) {
-            throw new ApiException(400, "CPF already registered", "CPF");
-        }
-
-        if (customer.getCpf() == null || customer.getCpf().length() < 11) {
-            throw new ApiException(400, "CPF must have 11 digits", "CPF");
+        validate(customer);
+        if (customerRepository.existsByCpf(customer.getCpf())) {
+            throw new ApiException(409, "CPF already registered", "CPF");
         }
 
         return customerRepository.save(customer);
+    }
+
+    private void validate(Customer customer) {
+        if (customer.getName() == null || customer.getName().isBlank()) {
+            throw new ApiException(400, "Name is required", "name");
+        }
+        if (customer.getCpf() == null || !customer.getCpf().matches("\\d{11}")) {
+            throw new ApiException(400, "CPF must have 11 digits", "CPF");
+        }
+        if (!"ACTIVE".equals(customer.getStatus()) && !"INACTIVE".equals(customer.getStatus())) {
+            throw new ApiException(400, "Status must be ACTIVE or INACTIVE", "status");
+        }
     }
 
     public List<Customer> findAll() {
@@ -55,10 +62,21 @@ public class CustomerService {
     }
 
     public Optional<Customer> updateById(Long id, Customer updatedCustomer) {
+        if (updatedCustomer == null) {
+            throw new ApiException(400, "Customer is invalid", "Body");
+        }
+        validate(updatedCustomer);
+
         Optional<Customer> existingCustomer = customerRepository.findById(id);
 
         if (existingCustomer.isPresent()) {
             Customer customer = existingCustomer.get();
+            if (!customer.getCpf().equals(updatedCustomer.getCpf())
+                    && customerRepository.existsByCpfAndIdNot(updatedCustomer.getCpf(), id)) {
+                throw new ApiException(409, "CPF already registered", "CPF");
+            }
+            customer.setName(updatedCustomer.getName());
+            customer.setCpf(updatedCustomer.getCpf());
             customer.setStatus(updatedCustomer.getStatus());
             customerRepository.save(customer);
             return Optional.of(customer);

@@ -14,6 +14,10 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
 
 	Optional<Customer> findByCpf(String cpf);
 
+	boolean existsByCpf(String cpf);
+
+	boolean existsByCpfAndIdNot(String cpf, Long id);
+
 	@Query("""
 			select c from Customer c
 			where (:name is null or lower(c.name) like lower(concat('%', :name, '%')))

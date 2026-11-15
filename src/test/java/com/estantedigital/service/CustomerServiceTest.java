@@ -40,7 +40,7 @@ class CustomerServiceTest {
     @Test
     void shouldSaveCustomerWithValidCpf() {
         Customer customer = newCustomer("Ana", CPF, "ACTIVE");
-        when(customerRepository.findByCpf(CPF)).thenReturn(Optional.empty());
+        when(customerRepository.existsByCpf(CPF)).thenReturn(false);
         when(customerRepository.save(customer)).thenReturn(customer);
 
         Customer result = customerService.save(customer);
@@ -52,7 +52,6 @@ class CustomerServiceTest {
     @Test
     void shouldRejectCustomerWithCpfShorterThanElevenDigits() {
         Customer customer = newCustomer("Ana", "123", "ACTIVE");
-        when(customerRepository.findByCpf("123")).thenReturn(Optional.empty());
 
         ApiException exception = assertThrows(ApiException.class, () -> customerService.save(customer));
 
@@ -65,7 +64,6 @@ class CustomerServiceTest {
     @Test
     void shouldRejectCustomerWithoutCpf() {
         Customer customer = newCustomer("Ana", null, "ACTIVE");
-        when(customerRepository.findByCpf(null)).thenReturn(Optional.empty());
 
         ApiException exception = assertThrows(ApiException.class, () -> customerService.save(customer));
 
@@ -75,13 +73,12 @@ class CustomerServiceTest {
 
     @Test
     void shouldRejectDuplicateCpf() {
-        Customer existingCustomer = newCustomer("Ana", CPF, "ACTIVE");
         Customer duplicateCustomer = newCustomer("Different name", CPF, "INACTIVE");
-        when(customerRepository.findByCpf(CPF)).thenReturn(Optional.of(existingCustomer));
+        when(customerRepository.existsByCpf(CPF)).thenReturn(true);
 
         ApiException exception = assertThrows(ApiException.class, () -> customerService.save(duplicateCustomer));
 
-        assertEquals(400, exception.getStatus());
+        assertEquals(409, exception.getStatus());
         assertEquals("CPF already registered", exception.getMessage());
         assertEquals("CPF", exception.getField());
         verify(customerRepository, never()).save(org.mockito.ArgumentMatchers.any());
@@ -144,10 +141,11 @@ class CustomerServiceTest {
     }
 
     @Test
-    void shouldUpdateExistingCustomerStatus() {
+    void shouldReplaceExistingCustomerFields() {
         Customer customer = newCustomer("Ana", CPF, "ACTIVE");
-        Customer updatedCustomer = newCustomer("Ignored name", "ignored-cpf", "INACTIVE");
+        Customer updatedCustomer = newCustomer("Updated name", "10987654321", "INACTIVE");
         when(customerRepository.findById(1L)).thenReturn(Optional.of(customer));
+        when(customerRepository.existsByCpfAndIdNot("10987654321", 1L)).thenReturn(false);
         when(customerRepository.save(customer)).thenReturn(customer);
 
         Optional<Customer> result = customerService.updateById(1L, updatedCustomer);
@@ -155,8 +153,8 @@ class CustomerServiceTest {
         assertTrue(result.isPresent());
         assertSame(customer, result.get());
         assertEquals("INACTIVE", customer.getStatus());
-        assertEquals("Ana", customer.getName());
-        assertEquals(CPF, customer.getCpf());
+        assertEquals("Updated name", customer.getName());
+        assertEquals("10987654321", customer.getCpf());
         verify(customerRepository).save(customer);
     }
 
@@ -167,6 +165,20 @@ class CustomerServiceTest {
         Optional<Customer> result = customerService.updateById(1L, newCustomer("Ana", CPF, "INACTIVE"));
 
         assertFalse(result.isPresent());
+        verify(customerRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void shouldRejectUpdatingCustomerToAnotherCustomersCpf() {
+        Customer customer = newCustomer("Ana", CPF, "ACTIVE");
+        when(customerRepository.findById(1L)).thenReturn(Optional.of(customer));
+        when(customerRepository.existsByCpfAndIdNot("10987654321", 1L)).thenReturn(true);
+
+        ApiException exception = assertThrows(ApiException.class, () -> customerService.updateById(
+                1L, newCustomer("Updated name", "10987654321", "ACTIVE")));
+
+        assertEquals(409, exception.getStatus());
+        assertEquals("CPF already registered", exception.getMessage());
         verify(customerRepository, never()).save(org.mockito.ArgumentMatchers.any());
     }
 

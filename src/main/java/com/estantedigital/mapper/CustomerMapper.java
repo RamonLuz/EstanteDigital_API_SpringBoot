@@ -37,9 +37,4 @@ public final class CustomerMapper {
                 purchases);
     }
 
-    public static void applyUpdate(Customer entity, CustomerRequestDTO dto) {
-        if (dto.getStatus() != null) {
-            entity.setStatus(dto.getStatus());
-        }
-    }
 }

@@ -145,10 +145,12 @@ class EmployeeServiceTest {
     }
 
     @Test
-    void shouldUpdateExistingEmployeeStatus() {
+    void shouldReplaceExistingEmployeeFields() {
         Employee employee = newEmployee("Joao", CPF, 1001, "Seller", "ACTIVE");
-        Employee updatedEmployee = newEmployee("Ignored name", "ignored-cpf", 9999, "Ignored position", "INACTIVE");
+        Employee updatedEmployee = newEmployee("Updated name", "10987654321", 2002, "Manager", "INACTIVE");
         when(employeeRepository.findById(1L)).thenReturn(Optional.of(employee));
+        when(employeeRepository.existsByCpfAndIdNot("10987654321", 1L)).thenReturn(false);
+        when(employeeRepository.existsByRegistrationNumberAndIdNot(2002, 1L)).thenReturn(false);
         when(employeeRepository.save(employee)).thenReturn(employee);
 
         Optional<Employee> result = employeeService.updateById(1L, updatedEmployee);
@@ -156,10 +158,10 @@ class EmployeeServiceTest {
         assertTrue(result.isPresent());
         assertSame(employee, result.get());
         assertEquals("INACTIVE", employee.getStatus());
-        assertEquals("Joao", employee.getName());
-        assertEquals(CPF, employee.getCpf());
-        assertEquals(1001, employee.getRegistrationNumber());
-        assertEquals("Seller", employee.getPosition());
+        assertEquals("Updated name", employee.getName());
+        assertEquals("10987654321", employee.getCpf());
+        assertEquals(2002, employee.getRegistrationNumber());
+        assertEquals("Manager", employee.getPosition());
         verify(employeeRepository).save(employee);
     }
 
@@ -171,6 +173,21 @@ class EmployeeServiceTest {
                 newEmployee("Joao", CPF, 1001, "Seller", "INACTIVE"));
 
         assertFalse(result.isPresent());
+        verify(employeeRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void shouldRejectUpdatingEmployeeToAnotherEmployeesRegistrationNumber() {
+        Employee employee = newEmployee("Joao", CPF, 1001, "Seller", "ACTIVE");
+        when(employeeRepository.findById(1L)).thenReturn(Optional.of(employee));
+        when(employeeRepository.existsByCpfAndIdNot("10987654321", 1L)).thenReturn(false);
+        when(employeeRepository.existsByRegistrationNumberAndIdNot(2002, 1L)).thenReturn(true);
+
+        ApiException exception = assertThrows(ApiException.class, () -> employeeService.updateById(
+                1L, newEmployee("Updated name", "10987654321", 2002, "Manager", "ACTIVE")));
+
+        assertEquals(409, exception.getStatus());
+        assertEquals("Registration number already registered", exception.getMessage());
         verify(employeeRepository, never()).save(org.mockito.ArgumentMatchers.any());
     }
 

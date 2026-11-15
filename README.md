@@ -13,6 +13,8 @@ O projeto foi criado com o objetivo de praticar conceitos de desenvolvimento bac
 * Spring Web
 * Spring Data JPA
 * Bean Validation
+* Spring Security com JWT Bearer
+* Springdoc OpenAPI / Swagger UI
 * H2 Database
 * Maven
 
@@ -53,7 +55,7 @@ src
 * Cadastrar cliente
 * Listar clientes
 * Buscar cliente por ID
-* Atualizar status do cliente
+* Atualizar cliente
 * Remover cliente
 
 ### Funcionários
@@ -61,6 +63,8 @@ src
 * Cadastrar funcionário
 * Listar funcionários
 * Buscar funcionário por ID
+* Atualizar funcionário
+* Remover funcionário
 
 ### Vendas
 
@@ -88,6 +92,8 @@ Banco de Dados
 ```
 
 Essa organização ajuda a manter o controlador responsável apenas por receber e responder requisições, deixando a conversão e a lógica de negócio em camadas específicas.
+
+Para detalhes sobre responsabilidades, fluxo, contratos e modelo de dados, consulte [docs/architecture.md](docs/architecture.md) e o contrato OpenAPI em [docs/openapi.yaml](docs/openapi.yaml). A documentação interativa gerada pelo Springdoc fica disponível em `http://localhost:8080/swagger-ui/index.html` e o contrato JSON em `http://localhost:8080/v3/api-docs`. O Springdoc é uma dependência open source gratuita; não requer assinatura nem serviço externo.
 
 ---
 
@@ -222,6 +228,17 @@ isolado.
 
 ---
 
+### Sistema e autenticação demonstrativa
+
+| Método | Endpoint |
+| ------ | -------- |
+| GET    | /health |
+| POST   | /auth/login |
+
+O token retornado por `/auth/login` não é obrigatório nas demais rotas.
+
+---
+
 ## 📄 Paginação e filtros
 
 As listagens `GET /books`, `/customers`, `/employees` e `/sales` retornam uma
@@ -341,6 +358,14 @@ usa H2 em memória; os dados são reiniciados quando o container é recriado.
 As credenciais e a chave JWT padrão são apenas para estudo. Defina as variáveis
 de ambiente antes de iniciar se desejar substituí-las. Como os endpoints estão
 públicos neste modo, não exponha o serviço a redes não confiáveis.
+
+### Executando os testes
+
+Para executar testes unitários, de integração e as verificações Maven:
+
+```powershell
+.\mvnw.cmd clean verify
+```
 
 ---
 
