@@ -5,9 +5,15 @@ import java.util.Objects;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+
+import com.estantedigital.exception.DomainRuleViolationException;
 
 @Entity
-@Table(name = "employees")
+@Table(name = "employees", uniqueConstraints = {
+        @UniqueConstraint(name = "uk_employees_cpf", columnNames = "cpf"),
+        @UniqueConstraint(name = "uk_employees_registration_number", columnNames = "registration_number")
+})
 public class Employee extends Person {
 
     @Column(nullable = false)
@@ -20,37 +26,41 @@ public class Employee extends Person {
     private String status;
 
     public Employee(String name, String cpf, int registrationNumber, String position, String status) {
-        super(name, cpf);
-        this.registrationNumber = registrationNumber;
-        this.position = position;
-        this.status = status;
+        super();
+        updateDetails(name, cpf, registrationNumber, position, status);
     }
 
-    public Employee() {
+    protected Employee() {
+    }
+
+    public void updateDetails(String name, String cpf, int registrationNumber, String position, String status) {
+        if (registrationNumber < 1) {
+            throw new DomainRuleViolationException(
+                    "registrationNumber", "Registration number must be greater than zero");
+        }
+        if (position == null || position.isBlank()) {
+            throw new DomainRuleViolationException("position", "Position is required");
+        }
+        if (!"ACTIVE".equals(status) && !"INACTIVE".equals(status)) {
+            throw new DomainRuleViolationException("status", "Status must be ACTIVE or INACTIVE");
+        }
+
+        changeIdentity(name, cpf);
+        this.registrationNumber = registrationNumber;
+        this.position = position.trim();
+        this.status = status;
     }
 
     public int getRegistrationNumber() {
         return registrationNumber;
     }
 
-    public void setRegistrationNumber(int registrationNumber) {
-        this.registrationNumber = registrationNumber;
-    }
-
     public String getPosition() {
         return position;
     }
 
-    public void setPosition(String position) {
-        this.position = position;
-    }
-
     public String getStatus() {
         return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
     }
 
     @Override

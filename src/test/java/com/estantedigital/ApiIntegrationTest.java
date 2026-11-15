@@ -1,5 +1,6 @@
 package com.estantedigital;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -49,6 +51,9 @@ class ApiIntegrationTest {
 
     @Autowired
     private BookRepository bookRepository;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     private String accessToken;
 
@@ -109,6 +114,29 @@ class ApiIntegrationTest {
 
         mockMvc.perform(get("/swagger-ui/index.html"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void actuatorShouldExposeHealthAndMetricsEndpoints() throws Exception {
+        mockMvc.perform(get("/actuator/health"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UP"));
+        mockMvc.perform(get("/actuator/health/liveness"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UP"));
+        mockMvc.perform(get("/actuator/metrics"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.names").isArray());
+    }
+
+    @Test
+    void flywayShouldRecordTheInitialSchemaMigration() {
+        Integer successfulMigrations = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM \"flyway_schema_history\" "
+                        + "WHERE \"version\" = '1' AND \"success\" = TRUE",
+                Integer.class);
+
+        assertEquals(1, successfulMigrations);
     }
 
     @Test
@@ -184,6 +212,10 @@ class ApiIntegrationTest {
                 .andExpect(status().isCreated())
                 .andReturn();
         long saleId = objectMapper.readTree(saleResult.getResponse().getContentAsString()).get("id").asLong();
+
+        mockMvc.perform(get("/actuator/metrics/estantedigital.sales.created"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("estantedigital.sales.created"));
 
         mockMvc.perform(authenticated(post("/sales")
                         .contentType(MediaType.APPLICATION_JSON)

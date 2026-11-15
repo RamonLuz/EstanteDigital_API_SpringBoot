@@ -50,28 +50,6 @@ class CustomerServiceTest {
     }
 
     @Test
-    void shouldRejectCustomerWithCpfShorterThanElevenDigits() {
-        Customer customer = newCustomer("Ana", "123", "ACTIVE");
-
-        ApiException exception = assertThrows(ApiException.class, () -> customerService.save(customer));
-
-        assertEquals(400, exception.getStatus());
-        assertEquals("CPF must have 11 digits", exception.getMessage());
-        assertEquals("CPF", exception.getField());
-        verify(customerRepository, never()).save(org.mockito.ArgumentMatchers.any());
-    }
-
-    @Test
-    void shouldRejectCustomerWithoutCpf() {
-        Customer customer = newCustomer("Ana", null, "ACTIVE");
-
-        ApiException exception = assertThrows(ApiException.class, () -> customerService.save(customer));
-
-        assertEquals("CPF must have 11 digits", exception.getMessage());
-        verify(customerRepository, never()).save(org.mockito.ArgumentMatchers.any());
-    }
-
-    @Test
     void shouldRejectDuplicateCpf() {
         Customer duplicateCustomer = newCustomer("Different name", CPF, "INACTIVE");
         when(customerRepository.existsByCpf(CPF)).thenReturn(true);

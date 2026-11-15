@@ -27,11 +27,7 @@ class BookMapperTest {
 
     @Test
     void shouldMapEntityToResponseDto() {
-        Book book = new Book();
-        book.setId(1L);
-        book.setTitle("Clean Code");
-        book.setAuthor("Robert Martin");
-        book.setPrice(150.0);
+        Book book = new Book(1L, "Clean Code", "Robert Martin", 150.0);
 
         var response = BookMapper.toResponse(book);
 

@@ -70,6 +70,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(ex.getStatus()).body(response);
     }
 
+    @ExceptionHandler(DomainRuleViolationException.class)
+    public ResponseEntity<ApiExceptionDTO> handleDomainRuleViolation(DomainRuleViolationException ex) {
+        return ResponseEntity.badRequest()
+                .body(new ApiExceptionDTO(400, ex.getMessage(), ex.getField()));
+    }
+
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<ApiExceptionDTO> handleResponseStatus(ResponseStatusException ex) {
         int status = ex.getStatusCode().value();

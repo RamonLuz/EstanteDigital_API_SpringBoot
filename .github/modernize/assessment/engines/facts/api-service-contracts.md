@@ -1,6 +1,6 @@
 # API & Service Communication Contracts
 
-The EstanteDigital API exposes 20 HTTP endpoints for health, authentication demonstration, books, customers, employees, and sales. Requests and responses use synchronous HTTP/JSON; internal calls are direct and synchronous.
+The EstanteDigital API exposes 20 resource and authentication endpoints plus health, management, and metrics endpoints. Requests and responses use synchronous HTTP/JSON; internal calls are direct and synchronous.
 
 ## Service Catalog
 
@@ -13,6 +13,9 @@ The EstanteDigital API exposes 20 HTTP endpoints for health, authentication demo
 | Service | Method | Path | Request Type | Response Type |
 | --- | --- | --- | --- | --- |
 | EstanteDigital API | GET | `/health` | None | `Health` (200) |
+| EstanteDigital API | GET | `/actuator/health`, `/actuator/health/liveness`, `/actuator/health/readiness` | None | Actuator health document (200) |
+| EstanteDigital API | GET | `/actuator/info` | None | Application information (200) |
+| EstanteDigital API | GET | `/actuator/metrics`, `/actuator/metrics/{requiredMetricName}` | Optional metric name path | Metric names or measurements (200) |
 | EstanteDigital API | POST | `/auth/login` | `LoginRequestDTO` body | `TokenResponseDTO` (200); `ApiExceptionDTO` (400/401) |
 | EstanteDigital API | GET | `/books` | Query: `page`, `size`, `title`, `author` | `PageResponseDTO<BookResponseDTO>` (200); error (400) |
 | EstanteDigital API | POST | `/books` | `BookRequestDTO` body | `BookResponseDTO` (201); error (400/409) |
@@ -43,8 +46,11 @@ and deletes return an empty `404`.
 | Service | Endpoint | Custom Metrics (if any) |
 | --- | --- | --- |
 | EstanteDigital API | `GET /health` (custom health response) | None identified |
+| EstanteDigital API | `GET /actuator/health`, `/actuator/health/liveness`, `/actuator/health/readiness` | Health and availability probes |
+| EstanteDigital API | `GET /actuator/info` | Application name and description |
+| EstanteDigital API | `GET /actuator/metrics` | HTTP/JVM metrics and `estantedigital.sales.created` |
 
-No Spring Boot Actuator endpoints or custom metrics are configured.
+Actuator health details are hidden; metrics are exposed for this study API.
 
 ## DTOs & Contracts
 
@@ -72,7 +78,10 @@ Swagger UI documentation at `/swagger-ui/index.html`, with JSON at
 - **Asynchronous:** no message broker, event bus, or asynchronous service
   communication was identified.
 - **Resilience:** no retry, circuit-breaker, bulkhead, or explicit downstream
-  timeout policy was identified.
+  timeout policy is configured. The application has no remote downstream calls;
+  sale creation is transactional, database constraints prevent duplicate
+  records, and graceful shutdown is enabled. No circuit breaker is added around
+  local database access.
 - **Discovery and gateway:** no service discovery, API gateway, or client-side
   load balancing is configured.
 - **Startup dependencies:** the application uses embedded H2; no external
@@ -86,7 +95,7 @@ Swagger UI documentation at `/swagger-ui/index.html`, with JSON at
 
 | Service | Web | Data Access | Discovery | Gateway | Actuator | Cache | Metrics |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| EstanteDigital API | Spring MVC | Spring Data JPA | None | None | No (custom `/health` only) | None identified | None identified |
+| EstanteDigital API | Spring MVC | Spring Data JPA + Flyway | None | None | Health, info | None identified | Micrometer HTTP/JVM and sales counter |
 
 ## Service Communication Sequence
 

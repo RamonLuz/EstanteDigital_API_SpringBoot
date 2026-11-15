@@ -9,6 +9,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.validation.constraints.NotBlank;
 
+import com.estantedigital.exception.DomainRuleViolationException;
+
 @MappedSuperclass
 public abstract class Person {
 
@@ -25,11 +27,22 @@ public abstract class Person {
     protected String cpf;
 
     public Person(String name, String cpf) {
-        this.name = name;
-        this.cpf = cpf;
+        changeIdentity(name, cpf);
     }
 
-    public Person() {
+    protected Person() {
+    }
+
+    protected void changeIdentity(String name, String cpf) {
+        if (name == null || name.isBlank()) {
+            throw new DomainRuleViolationException("name", "Name is required");
+        }
+        if (cpf == null || !cpf.matches("\\d{11}")) {
+            throw new DomainRuleViolationException("cpf", "CPF must contain exactly 11 digits");
+        }
+
+        this.name = name.trim();
+        this.cpf = cpf;
     }
 
     public Long getId() {
@@ -40,16 +53,8 @@ public abstract class Person {
         return name;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
     public String getCpf() {
         return cpf;
-    }
-
-    public void setCpf(String cpf) {
-        this.cpf = cpf;
     }
 
     @Override

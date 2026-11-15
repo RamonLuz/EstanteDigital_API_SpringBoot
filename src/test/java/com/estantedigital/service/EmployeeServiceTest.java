@@ -78,28 +78,6 @@ class EmployeeServiceTest {
     }
 
     @Test
-    void shouldRejectEmployeeWithCpfShorterThanElevenDigits() {
-        Employee employee = newEmployee("Joao", "123", 1001, "Seller", "ACTIVE");
-
-        ApiException exception = assertThrows(ApiException.class, () -> employeeService.save(employee));
-
-        assertEquals(400, exception.getStatus());
-        assertEquals("CPF must have 11 digits", exception.getMessage());
-        assertEquals("CPF", exception.getField());
-        verify(employeeRepository, never()).save(org.mockito.ArgumentMatchers.any());
-    }
-
-    @Test
-    void shouldRejectEmployeeWithoutCpf() {
-        Employee employee = newEmployee("Joao", null, 1001, "Seller", "ACTIVE");
-
-        ApiException exception = assertThrows(ApiException.class, () -> employeeService.save(employee));
-
-        assertEquals("CPF must have 11 digits", exception.getMessage());
-        verify(employeeRepository, never()).save(org.mockito.ArgumentMatchers.any());
-    }
-
-    @Test
     void shouldRejectNullEmployee() {
         ApiException exception = assertThrows(ApiException.class, () -> employeeService.save(null));
 

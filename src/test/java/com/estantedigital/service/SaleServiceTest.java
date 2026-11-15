@@ -5,23 +5,25 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.anyInt;
 
-import java.util.ArrayList;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import com.estantedigital.entity.Book;
 import com.estantedigital.entity.Customer;
@@ -33,11 +35,14 @@ import com.estantedigital.repository.CustomerRepository;
 import com.estantedigital.repository.EmployeeRepository;
 import com.estantedigital.repository.SaleRepository;
 
+import io.micrometer.core.instrument.Counter;
+
 @ExtendWith(MockitoExtension.class)
 class SaleServiceTest {
 
     private static final String CUSTOMER_CPF = "12345678901";
     private static final String EMPLOYEE_CPF = "12345678902";
+    private static final LocalDate SALE_DATE = LocalDate.of(2026, 10, 11);
 
     @Mock
     private SaleRepository saleRepository;
@@ -51,12 +56,15 @@ class SaleServiceTest {
     @Mock
     private EmployeeRepository employeeRepository;
 
+    @Mock
+    private Counter salesCreatedCounter;
+
     @InjectMocks
     private SaleService saleService;
 
     @Test
     void shouldListSales() {
-        Sale sale = new Sale();
+        Sale sale = newSale(newCustomer(), newEmployee(1001), newBook("Clean Code", "Robert Martin"));
         when(saleRepository.findAll()).thenReturn(List.of(sale));
 
         List<Sale> result = saleService.findAll();
@@ -67,7 +75,7 @@ class SaleServiceTest {
 
     @Test
     void shouldFindSaleById() {
-        Sale sale = new Sale();
+        Sale sale = newSale(newCustomer(), newEmployee(1001), newBook("Clean Code", "Robert Martin"));
         when(saleRepository.findById(1L)).thenReturn(Optional.of(sale));
 
         Optional<Sale> result = saleService.findById(1L);
@@ -88,7 +96,7 @@ class SaleServiceTest {
     @Test
     void shouldSearchSalesByCustomerBookAndEmployee() {
         Pageable pageable = PageRequest.of(0, 10);
-        Sale sale = new Sale();
+        Sale sale = newSale(newCustomer(), newEmployee(1001), newBook("Clean Code", "Robert Martin"));
         Page<Sale> expected = new PageImpl<>(List.of(sale), pageable, 1);
         when(saleRepository.search("123", "clean", 1001, pageable)).thenReturn(expected);
 
@@ -99,127 +107,97 @@ class SaleServiceTest {
     }
 
     @Test
-    void shouldSaveSaleAndAddBookToCustomerPurchases() {
-        List<Book> purchases = new ArrayList<>();
-        Customer customer = newCustomer(purchases);
-        Book book = newBook("Clean Code", "Robert Martin", 100.0);
+    void shouldRegisterSaleAndTrackMetric() {
+        Customer customer = newCustomer();
+        Book book = newBook("Clean Code", "Robert Martin");
         Employee employee = newEmployee(1001);
-        Sale sale = newSale(
-                new Customer("Requested name", CUSTOMER_CPF, "REQUESTED", null),
-                newEmployee(1001),
-                newBook("Clean Code", "Robert Martin", 120.0));
         stubExistingReferences(customer, book, employee);
-        when(saleRepository.save(sale)).thenReturn(sale);
+        when(saleRepository.saveAndFlush(any(Sale.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
-        Sale result = saleService.save(sale);
+        Sale result = saleService.save(newCommand(CUSTOMER_CPF, 1001, "Clean Code", "Robert Martin"));
 
-        assertSame(sale, result);
-        assertSame(customer, sale.getCustomer());
-        assertSame(book, sale.getBook());
-        assertSame(employee, sale.getEmployee());
-        assertEquals(List.of(book), purchases);
-        verify(saleRepository).save(sale);
+        assertSame(customer, result.getCustomer());
+        assertSame(book, result.getBook());
+        assertSame(employee, result.getEmployee());
+        assertEquals(List.of(book), customer.getPurchases());
+        verify(salesCreatedCounter).increment();
     }
 
     @Test
     void shouldRejectSaleWhenCustomerDoesNotExist() {
-        Sale sale = newSale(newCustomer(null), newEmployee(1001), newBook("Title", "Author", 10.0));
         when(customerRepository.findByCpf(CUSTOMER_CPF)).thenReturn(Optional.empty());
 
-        ApiException exception = assertThrows(ApiException.class, () -> saleService.save(sale));
+        ApiException exception = assertThrows(
+                ApiException.class,
+                () -> saleService.save(newCommand(CUSTOMER_CPF, 1001, "Clean Code", "Robert Martin")));
 
         assertEquals(400, exception.getStatus());
         assertEquals("Customer does not exist", exception.getMessage());
         assertEquals("Body", exception.getField());
-        verify(bookRepository, never()).findByTitleAndAuthor(org.mockito.ArgumentMatchers.anyString(),
-                org.mockito.ArgumentMatchers.anyString());
-        verify(saleRepository, never()).save(org.mockito.ArgumentMatchers.any());
+        verify(bookRepository, never()).findByTitleAndAuthor(any(String.class), any(String.class));
+        verify(saleRepository, never()).saveAndFlush(any());
+        verify(salesCreatedCounter, never()).increment();
     }
 
     @Test
     void shouldRejectSaleWhenBookDoesNotExist() {
-        Customer customer = newCustomer(null);
-        Sale sale = newSale(customer, newEmployee(1001), newBook("Missing", "Author", 10.0));
+        Customer customer = newCustomer();
         when(customerRepository.findByCpf(CUSTOMER_CPF)).thenReturn(Optional.of(customer));
         when(bookRepository.findByTitleAndAuthor("Missing", "Author")).thenReturn(List.of());
 
-        ApiException exception = assertThrows(ApiException.class, () -> saleService.save(sale));
+        ApiException exception = assertThrows(
+                ApiException.class,
+                () -> saleService.save(newCommand(CUSTOMER_CPF, 1001, "Missing", "Author")));
 
         assertEquals("Book does not exist", exception.getMessage());
-        verify(employeeRepository, never()).findByRegistrationNumber(org.mockito.ArgumentMatchers.anyInt());
-        verify(saleRepository, never()).save(org.mockito.ArgumentMatchers.any());
+        verify(employeeRepository, never()).findByRegistrationNumber(anyInt());
+        verify(saleRepository, never()).saveAndFlush(any());
     }
 
     @Test
     void shouldRejectSaleWhenEmployeeDoesNotExist() {
-        Customer customer = newCustomer(null);
-        Book book = newBook("Clean Code", "Robert Martin", 100.0);
-        Sale sale = newSale(customer, newEmployee(1001), book);
+        Customer customer = newCustomer();
+        Book book = newBook("Clean Code", "Robert Martin");
         when(customerRepository.findByCpf(CUSTOMER_CPF)).thenReturn(Optional.of(customer));
         when(bookRepository.findByTitleAndAuthor(book.getTitle(), book.getAuthor())).thenReturn(List.of(book));
         when(employeeRepository.findByRegistrationNumber(1001)).thenReturn(Optional.empty());
 
-        ApiException exception = assertThrows(ApiException.class, () -> saleService.save(sale));
+        ApiException exception = assertThrows(
+                ApiException.class,
+                () -> saleService.save(newCommand(CUSTOMER_CPF, 1001, book.getTitle(), book.getAuthor())));
 
         assertEquals("Employee does not exist", exception.getMessage());
-        verify(saleRepository, never()).save(org.mockito.ArgumentMatchers.any());
+        verify(saleRepository, never()).saveAndFlush(any());
     }
 
     @Test
-    void shouldSaveSaleWhenCustomerHasNoPurchaseList() {
-        Customer customer = newCustomer(null);
-        Book book = newBook("Clean Code", "Robert Martin", 100.0);
-        Employee employee = newEmployee(1001);
-        Sale sale = newSale(customer, employee, book);
-        stubExistingReferences(customer, book, employee);
-        when(saleRepository.save(sale)).thenReturn(sale);
-
-        assertSame(sale, saleService.save(sale));
-
-        assertEquals(List.of(book), customer.getPurchases());
-        verify(saleRepository).save(sale);
-    }
-
-    @Test
-    void shouldRejectSaleWhenBookLookupIsEmpty() {
-        List<Book> purchases = new ArrayList<>();
-        Customer customer = newCustomer(purchases);
-        Book book = newBook("Clean Code", "Robert Martin", 100.0);
-        Employee employee = newEmployee(1001);
-        Sale sale = newSale(customer, employee, book);
-
-        when(customerRepository.findByCpf(CUSTOMER_CPF)).thenReturn(Optional.of(customer));
-        when(bookRepository.findByTitleAndAuthor(book.getTitle(), book.getAuthor())).thenReturn(List.of());
-
-        ApiException exception = assertThrows(ApiException.class, () -> saleService.save(sale));
-
-        assertEquals("Book does not exist", exception.getMessage());
-        assertTrue(purchases.isEmpty());
-        verify(saleRepository, never()).save(org.mockito.ArgumentMatchers.any());
-    }
-
-    @Test
-    void shouldRejectSaleWhenSaleIsNull() {
+    void shouldRejectNullCommand() {
         ApiException exception = assertThrows(ApiException.class, () -> saleService.save(null));
 
         assertEquals(400, exception.getStatus());
         assertEquals("Sale is invalid", exception.getMessage());
         assertEquals("Body", exception.getField());
-        verify(saleRepository, never()).save(org.mockito.ArgumentMatchers.any());
+        verify(saleRepository, never()).saveAndFlush(any());
     }
 
     private void stubExistingReferences(Customer customer, Book book, Employee employee) {
         when(customerRepository.findByCpf(customer.getCpf())).thenReturn(Optional.of(customer));
         when(bookRepository.findByTitleAndAuthor(book.getTitle(), book.getAuthor())).thenReturn(List.of(book));
-        when(employeeRepository.findByRegistrationNumber(employee.getRegistrationNumber())).thenReturn(Optional.of(employee));
+        when(employeeRepository.findByRegistrationNumber(employee.getRegistrationNumber()))
+                .thenReturn(Optional.of(employee));
     }
 
-    private Customer newCustomer(List<Book> purchases) {
-        return new Customer("Ana", CUSTOMER_CPF, "ACTIVE", purchases);
+    private CreateSaleCommand newCommand(String cpf, int registrationNumber, String title, String author) {
+        return new CreateSaleCommand(cpf, registrationNumber, title, author, SALE_DATE);
     }
 
-    private Book newBook(String title, String author, Double price) {
-        return new Book(null, title, author, price);
+    private Customer newCustomer() {
+        return new Customer("Ana", CUSTOMER_CPF, "ACTIVE");
+    }
+
+    private Book newBook(String title, String author) {
+        return new Book(title, author, 100.0);
     }
 
     private Employee newEmployee(int registrationNumber) {
@@ -227,6 +205,6 @@ class SaleServiceTest {
     }
 
     private Sale newSale(Customer customer, Employee employee, Book book) {
-        return new Sale(null, customer, employee, book);
+        return new Sale(customer, employee, book, SALE_DATE);
     }
 }

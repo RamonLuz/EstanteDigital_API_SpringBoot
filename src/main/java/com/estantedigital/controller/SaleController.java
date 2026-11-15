@@ -60,8 +60,7 @@ public class SaleController {
 
     @PostMapping
     public ResponseEntity<SaleResponseDTO> create(@Valid @RequestBody SaleRequestDTO dto) {
-        Sale sale = SaleMapper.toEntity(dto);
-        Sale savedSale = saleService.save(sale);
+        Sale savedSale = saleService.save(SaleMapper.toCommand(dto));
         return ResponseEntity.status(HttpStatus.CREATED).body(SaleMapper.toResponse(savedSale));
     }
 }

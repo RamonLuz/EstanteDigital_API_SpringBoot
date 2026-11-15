@@ -10,11 +10,7 @@ public final class BookMapper {
     }
 
     public static Book toEntity(BookRequestDTO dto) {
-        Book book = new Book();
-        book.setTitle(dto.getTitle());
-        book.setAuthor(dto.getAuthor());
-        book.setPrice(dto.getPrice());
-        return book;
+        return new Book(dto.getTitle(), dto.getAuthor(), dto.getPrice());
     }
 
     public static BookResponseDTO toResponse(Book entity) {

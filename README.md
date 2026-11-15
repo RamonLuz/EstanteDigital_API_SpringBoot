@@ -15,7 +15,10 @@ O projeto foi criado com o objetivo de praticar conceitos de desenvolvimento bac
 * Bean Validation
 * Spring Security com JWT Bearer
 * Springdoc OpenAPI / Swagger UI
+* Flyway para migrações versionadas
+* Spring Boot Actuator e Micrometer
 * H2 Database
+* Docker e Docker Compose
 * Maven
 
 ---
@@ -158,20 +161,31 @@ assinatura de serviço externo.
 
 ---
 
-## 🗄️ Banco de dados
+## 🗄️ Banco de dados e migrações
 
-O projeto utiliza banco de dados em memória H2.
+O projeto usa H2. Ao iniciar localmente, o padrão é um banco em memória; no
+Docker Compose, o banco usa arquivo no volume nomeado `estantedigital_data`,
+preservando os dados entre reinicializações dos containers.
+
+As alterações do schema são versionadas em `src/main/resources/db/migration`
+com Flyway. O Hibernate está em modo `validate`: ele verifica a compatibilidade
+das entidades com o schema, mas não cria nem altera tabelas automaticamente.
+Crie uma nova migração `V2__descricao.sql`, `V3__descricao.sql` etc. para cada
+alteração futura; não edite uma migração que já foi aplicada em ambientes
+compartilhados.
 
 ### Configuração
 
 ```yaml
 spring:
   datasource:
-    url: jdbc:h2:mem:estantedigital
+    url: jdbc:h2:mem:estantedigital;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     driver-class-name: org.h2.Driver
     username: sa
     password:
 ```
+
+É possível substituir a URL pelo ambiente `DB_URL`.
 
 ### Console H2
 
@@ -354,10 +368,21 @@ docker compose up --build
 
 A API ficará disponível em `http://localhost:8080`. Para parar e remover o
 container, pressione `Ctrl+C` e execute `docker compose down`. A configuração
-usa H2 em memória; os dados são reiniciados quando o container é recriado.
+usa H2 em arquivo dentro do volume nomeado, então os dados permanecem após
+recriar o container.
 As credenciais e a chave JWT padrão são apenas para estudo. Defina as variáveis
 de ambiente antes de iniciar se desejar substituí-las. Como os endpoints estão
 públicos neste modo, não exponha o serviço a redes não confiáveis.
+
+### Saúde e métricas
+
+O Actuator expõe os endpoints `GET /actuator/health`,
+`GET /actuator/health/liveness`, `GET /actuator/health/readiness`,
+`GET /actuator/info` e `GET /actuator/metrics`. A métrica
+`estantedigital.sales.created` conta vendas persistidas; métricas HTTP e da JVM
+são registradas pelo Micrometer. O projeto não usa Resilience4j porque não há
+chamadas de rede para outros serviços; vendas usam transação e constraints do
+banco para proteger consistência.
 
 ### Executando os testes
 

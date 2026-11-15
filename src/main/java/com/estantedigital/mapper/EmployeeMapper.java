@@ -10,13 +10,12 @@ public final class EmployeeMapper {
     }
 
     public static Employee toEntity(EmployeeRequestDTO dto) {
-        Employee employee = new Employee();
-        employee.setName(dto.getName());
-        employee.setCpf(dto.getCpf());
-        employee.setRegistrationNumber(dto.getRegistrationNumber());
-        employee.setPosition(dto.getPosition());
-        employee.setStatus(dto.getStatus());
-        return employee;
+        return new Employee(
+                dto.getName(),
+                dto.getCpf(),
+                dto.getRegistrationNumber(),
+                dto.getPosition(),
+                dto.getStatus());
     }
 
     public static EmployeeResponseDTO toResponse(Employee entity) {

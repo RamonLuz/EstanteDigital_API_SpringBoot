@@ -33,8 +33,6 @@ public class BookService {
             throw new ApiException(400, "Book is invalid", "Body");
         }
 
-        validate(book);
-
         if (bookRepository.existsByTitleAndAuthor(book.getTitle(), book.getAuthor())) {
             throw new ApiException(409, "Book already exists for this author and title", "Body");
         }
@@ -50,8 +48,6 @@ public class BookService {
         if (updatedBook == null) {
             throw new ApiException(400, "Book is invalid", "Body");
         }
-        validate(updatedBook);
-
         Optional<Book> existingBook = bookRepository.findById(id);
 
         if (existingBook.isPresent()) {
@@ -61,9 +57,7 @@ public class BookService {
             }
 
             Book book = existingBook.get();
-            book.setTitle(updatedBook.getTitle());
-            book.setAuthor(updatedBook.getAuthor());
-            book.setPrice(updatedBook.getPrice());
+            book.updateDetails(updatedBook.getTitle(), updatedBook.getAuthor(), updatedBook.getPrice());
 
             bookRepository.save(book);
             return Optional.of(book);
@@ -85,15 +79,4 @@ public class BookService {
         return value == null || value.isBlank() ? null : value.trim();
     }
 
-    private void validate(Book book) {
-        if (book.getTitle() == null || book.getTitle().isBlank()) {
-            throw new ApiException(400, "Title is required", "title");
-        }
-        if (book.getAuthor() == null || book.getAuthor().isBlank()) {
-            throw new ApiException(400, "Author is required", "author");
-        }
-        if (book.getPrice() == null || book.getPrice() <= 0) {
-            throw new ApiException(400, "Price is invalid", "price");
-        }
-    }
 }

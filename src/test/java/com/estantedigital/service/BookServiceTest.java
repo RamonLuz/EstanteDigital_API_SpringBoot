@@ -95,28 +95,6 @@ class BookServiceTest {
     }
 
     @Test
-    void shouldRejectBookWithoutPrice() {
-        Book book = newBook("Clean Code", "Robert Martin", null);
-
-        ApiException exception = assertThrows(ApiException.class, () -> bookService.save(book));
-
-        assertEquals("Price is invalid", exception.getMessage());
-        verify(bookRepository, never()).save(org.mockito.ArgumentMatchers.any());
-    }
-
-    @Test
-    void shouldRejectZeroOrNegativePrice() {
-        ApiException zeroPrice = assertThrows(ApiException.class,
-                () -> bookService.save(newBook("Zero Price", "Author", 0.0)));
-        ApiException negativePrice = assertThrows(ApiException.class,
-                () -> bookService.save(newBook("Negative Price", "Author", -1.0)));
-
-        assertEquals("Price is invalid", zeroPrice.getMessage());
-        assertEquals("Price is invalid", negativePrice.getMessage());
-        verify(bookRepository, never()).save(org.mockito.ArgumentMatchers.any());
-    }
-
-    @Test
     void shouldFindBookById() {
         Book book = newBook("Clean Code", "Robert Martin", 100.0);
         when(bookRepository.findById(1L)).thenReturn(Optional.of(book));

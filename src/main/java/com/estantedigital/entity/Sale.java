@@ -10,6 +10,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
+import com.estantedigital.exception.DomainRuleViolationException;
+
 @Entity
 @Table(name = "sales")
 public class Sale {
@@ -18,23 +20,35 @@ public class Sale {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(optional = false)
     private Customer customer;
 
-    @ManyToOne
+    @ManyToOne(optional = false)
     private Employee employee;
 
-    @ManyToOne
+    @ManyToOne(optional = false)
     private Book book;
 
     @Column(nullable = false)
     private LocalDate saleDate = LocalDate.now();
 
-    public Sale() {
+    protected Sale() {
     }
 
     public Sale(Long id, Customer customer, Employee employee, Book book) {
         this.id = id;
+        assignParticipants(customer, employee, book);
+    }
+
+    public Sale(Customer customer, Employee employee, Book book, LocalDate saleDate) {
+        assignParticipants(customer, employee, book);
+        this.saleDate = saleDate == null ? LocalDate.now() : saleDate;
+    }
+
+    private void assignParticipants(Customer customer, Employee employee, Book book) {
+        if (customer == null || employee == null || book == null) {
+            throw new DomainRuleViolationException("participants", "Customer, employee, and book are required");
+        }
         this.customer = customer;
         this.employee = employee;
         this.book = book;
@@ -44,39 +58,20 @@ public class Sale {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
     public Customer getCustomer() {
         return customer;
-    }
-
-    public void setCustomer(Customer customer) {
-        this.customer = customer;
     }
 
     public Employee getEmployee() {
         return employee;
     }
 
-    public void setEmployee(Employee employee) {
-        this.employee = employee;
-    }
-
     public Book getBook() {
         return book;
-    }
-
-    public void setBook(Book book) {
-        this.book = book;
     }
 
     public LocalDate getSaleDate() {
         return saleDate;
     }
 
-    public void setSaleDate(LocalDate saleDate) {
-        this.saleDate = saleDate;
-    }
 }

@@ -12,11 +12,7 @@ public final class CustomerMapper {
     }
 
     public static Customer toEntity(CustomerRequestDTO dto) {
-        Customer customer = new Customer();
-        customer.setName(dto.getName());
-        customer.setCpf(dto.getCpf());
-        customer.setStatus(dto.getStatus());
-        return customer;
+        return new Customer(dto.getName(), dto.getCpf(), dto.getStatus());
     }
 
     public static CustomerResponseDTO toResponse(Customer entity) {

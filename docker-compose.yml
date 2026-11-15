@@ -9,4 +9,10 @@ services:
       APP_AUTH_USERNAME: ${APP_AUTH_USERNAME:-student}
       APP_AUTH_PASSWORD: ${APP_AUTH_PASSWORD:-student}
       APP_JWT_SECRET: ${APP_JWT_SECRET:-MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=}
+      DB_URL: "jdbc:h2:file:/data/estantedigital;DB_CLOSE_ON_EXIT=FALSE"
+    volumes:
+      - estantedigital_data:/data
     restart: unless-stopped
+
+volumes:
+  estantedigital_data:
